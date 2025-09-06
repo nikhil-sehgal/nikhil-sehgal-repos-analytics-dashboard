@@ -1,0 +1,16 @@
+{
+  "repositories": [
+    {
+      "owner": "nikhil-sehgal",
+      "name": "bedrock",
+      "enabled": true,
+      "last_updated": null
+    }
+  ],
+  "settings": {
+    "timezone": "UTC",
+    "retention_days": 0,
+    "data_repo_owner": "nikhil-sehgal",
+    "data_repo_name": "nikhil-sehgal-repos-data-collector"
+  }
+}
