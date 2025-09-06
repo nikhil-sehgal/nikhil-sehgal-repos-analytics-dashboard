@@ -508,20 +508,18 @@ class GitHubAnalyticsDashboard {
     }
 
     convertDailyData(dailyData) {
-        // Convert the daily metrics format to the format expected by the dashboard
         const converted = {};
-
-        for (const [year, yearData] of Object.entries(dailyData)) {
-            for (const [date, dayData] of Object.entries(yearData)) {
+        for (const yearData of Object.values(dailyData)) {
+            for (const [date, metrics] of Object.entries(yearData)) {
                 converted[date] = {
-                    views: dayData.views || 0,
-                    unique_visitors: dayData.unique_visitors || 0,
-                    clones: dayData.clones || 0,
-                    unique_cloners: dayData.unique_cloners || 0
+                    views: metrics.views ?? 0,
+                    unique_visitors: metrics.unique_visitors ?? 0,
+                    clones: metrics.clones ?? 0,
+                    unique_cloners: metrics.unique_cloners ?? 0,
+                    timestamp: metrics.timestamp ?? null
                 };
             }
         }
-
         return converted;
     }
 
