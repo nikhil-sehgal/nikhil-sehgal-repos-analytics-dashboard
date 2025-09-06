@@ -5,6 +5,7 @@ Handles loading and validation of configuration settings.
 """
 
 import json
+import logging
 import os
 from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
@@ -160,4 +161,47 @@ class ConfigManager:
         if not token:
             raise ValueError("GitHub token not found in environment or config")
         
-        return True
+        return True 
+   
+    def update_last_updated(self, owner: str, name: str, timestamp: str) -> bool:
+        """Update the last_updated timestamp for a repository.
+        
+        Args:
+            owner: Repository owner
+            name: Repository name
+            timestamp: ISO timestamp string
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            config = self.load_config()
+            repositories = config.get('repositories', [])
+            
+            # Find and update the repository
+            updated = False
+            for repo_config in repositories:
+                if isinstance(repo_config, dict):
+                    if (repo_config.get('owner') == owner and 
+                        repo_config.get('name') == name):
+                        repo_config['last_updated'] = timestamp
+                        updated = True
+                        break
+            
+            if updated:
+                # Save the updated config
+                with open(self.config_path, 'w', encoding='utf-8') as f:
+                    json.dump(config, f, indent=2, ensure_ascii=False)
+                
+                # Clear cached data to force reload
+                self._config = None
+                self._repositories = None
+                
+                return True
+            else:
+                logging.warning(f"Repository {owner}/{name} not found in config")
+                return False
+                
+        except Exception as e:
+            logging.error(f"Failed to update last_updated for {owner}/{name}: {e}")
+            return False
