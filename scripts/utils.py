@@ -295,4 +295,27 @@ class DataFileManager:
         daily_data = safe_json_load(daily_metrics_path)
         
         # Return data for the specific year, or empty dict if not found
-        return daily_data.get(str(year), {})
+        return daily_data.get(str(year), {})   
+ 
+    def save_daily_data(self, owner: str, name: str, year: int, data: Dict[str, Any]) -> bool:
+        """Save daily data for a repository and year.
+        
+        Args:
+            owner: Repository owner
+            name: Repository name
+            year: Year to save data for
+            data: Daily data to save
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        daily_metrics_path = self.get_daily_metrics_path(owner, name)
+        
+        # Load existing data
+        existing_data = safe_json_load(daily_metrics_path)
+        
+        # Update data for the specific year
+        existing_data[str(year)] = data
+        
+        # Save updated data
+        return safe_json_save(existing_data, daily_metrics_path)
