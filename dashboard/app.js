@@ -565,31 +565,7 @@ class GitHubDataLoader {
         this.baseUrl = 'https://raw.githubusercontent.com';
     }
 
-    // async loadDailyData(repoOwner, repoName, year) {
-    //     try {
-    //         const response = await fetch(
-    //             `${this.baseUrl}/${this.dataRepoOwner}/${this.dataRepoName}/contents/${repoOwner}/${repoName}/daily_metrics.json`,
-    //             {
-    //                 headers: {
-    //                     'Authorization': `token ${this.token}`,
-    //                     'Accept': 'application/vnd.github.v3+json'
-    //                 }
-    //             }
-    //         );
-
-    //         if (!response.ok) {
-    //             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    //         }
-
-    //         const data = await response.json();
-    //         const content = JSON.parse(atob(data.content));
-    //         return content;
-    //     } catch (error) {
-    //         console.error('Error loading daily data:', error);
-    //         return {};
-    //     }
-    // }
-    async loadDailyData(repoOwner, repoName, year) {
+  async loadDailyData(repoOwner, repoName, year) {
     const url = `${this.baseUrl}/${repoName}/main/${repoOwner}/bedrock/daily_metrics.json`;
     const response = await fetch(url);
     if (!response.ok) 
@@ -600,23 +576,12 @@ class GitHubDataLoader {
 
     async loadReferrersData(repoOwner, repoName) {
         try {
-            const response = await fetch(
-                `${this.baseUrl}/repos/${this.dataRepoOwner}/${this.dataRepoName}/contents/${repoOwner}/${repoName}/referrers.json`,
-                {
-                    headers: {
-                        'Authorization': `token ${this.token}`,
-                        'Accept': 'application/vnd.github.v3+json'
-                    }
-                }
-            );
-
+            const url = `${this.baseUrl}/${repoName}/main/${repoOwner}/bedrock/referrers.json`;
+            const response = await fetch(url);
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
-
-            const data = await response.json();
-            const content = JSON.parse(atob(data.content));
-            return content;
+            return await response.json();
         } catch (error) {
             console.error('Error loading referrers data:', error);
             return {};
