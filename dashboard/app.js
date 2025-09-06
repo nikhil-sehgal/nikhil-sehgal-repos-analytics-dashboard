@@ -515,9 +515,9 @@ class GitHubAnalyticsDashboard {
             for (const [date, dayData] of Object.entries(yearData)) {
                 converted[date] = {
                     views: dayData.views || 0,
-                    unique_views: dayData.unique_views || 0,
+                    unique_visitors: dayData.unique_visitors || 0,
                     clones: dayData.clones || 0,
-                    unique_clones: dayData.unique_clones || 0
+                    unique_cloners: dayData.unique_cloners || 0
                 };
             }
         }
