@@ -83,7 +83,8 @@ class DataCollectionOrchestrator:
                     self.logger.warning(f"Failed to collect historical data for {owner}/{repo_name}: {e}")
             
             # Update last_updated timestamp in config
-            self.config_manager.update_last_updated(owner, repo_name)
+            current_timestamp = get_current_utc_timestamp()
+            self.config_manager.update_last_updated(owner, repo_name, current_timestamp)
             
             self.logger.info(f"Successfully collected data for {owner}/{repo_name}")
             return True
