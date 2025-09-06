@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Analytics Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <h1>📊 GitHub Analytics</h1>
+                    <p>Long-term repository insights beyond 14 days</p>
+                </div>
+                <div class="header-actions">
+                    <select id="repo-selector" class="repo-selector">
+                        <option value="">Select Repository</option>
+                        <option value="nikhil-sehgal/bedrock">nikhil-sehgal/bedrock</option>
+                    </select>
+                    <div class="date-range">
+                        <input type="date" id="start-date" class="date-input">
+                        <span>to</span>
+                        <input type="date" id="end-date" class="date-input">
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Loading State -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading analytics data...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error" class="error-state" style="display: none;">
+            <div class="error-icon">⚠️</div>
+            <h3>Unable to load data</h3>
+            <p id="error-message">Please check your configuration and try again.</p>
+            <button onclick="retryLoad()" class="retry-btn">Retry</button>
+        </div>
+
+        <!-- Main Dashboard -->
+        <main id="dashboard" class="dashboard" style="display: none;">
+            
+            <!-- Summary Cards -->
+            <section class="summary-section">
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <div class="card-icon">👁️</div>
+                        <div class="card-content">
+                            <h3>Total Views</h3>
+                            <div class="card-value" id="total-views">-</div>
+                            <div class="card-change positive" id="views-change">+12% this month</div>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-card">
+                        <div class="card-icon">👥</div>
+                        <div class="card-content">
+                            <h3>Unique Visitors</h3>
+                            <div class="card-value" id="total-visitors">-</div>
+                            <div class="card-change positive" id="visitors-change">+8% this month</div>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-card">
+                        <div class="card-icon">📥</div>
+                        <div class="card-content">
+                            <h3>Total Clones</h3>
+                            <div class="card-value" id="total-clones">-</div>
+                            <div class="card-change neutral" id="clones-change">+2% this month</div>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-card">
+                        <div class="card-icon">🔄</div>
+                        <div class="card-content">
+                            <h3>Unique Cloners</h3>
+                            <div class="card-value" id="total-unique-cloners">-</div>
+                            <div class="card-change positive" id="unique-cloners-change">+15% this month</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Charts Section -->
+            <section class="charts-section">
+                <div class="charts-grid">
+                    
+                    <!-- Views Chart -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>📈 Daily Views & Visitors</h3>
+                            <div class="chart-controls">
+                                <button class="period-btn active" data-period="30">30D</button>
+                                <button class="period-btn" data-period="90">90D</button>
+                                <button class="period-btn" data-period="365">1Y</button>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="views-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Clones Chart -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>📥 Daily Clones</h3>
+                            <div class="chart-legend">
+                                <span class="legend-item">
+                                    <span class="legend-color" style="background: #3b82f6;"></span>
+                                    Total Clones
+                                </span>
+                                <span class="legend-item">
+                                    <span class="legend-color" style="background: #10b981;"></span>
+                                    Unique Cloners
+                                </span>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="clones-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Monthly Trends -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>📊 Monthly Trends</h3>
+                            <select class="metric-selector">
+                                <option value="views">Views</option>
+                                <option value="visitors">Visitors</option>
+                                <option value="clones">Clones</option>
+                            </select>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="monthly-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Top Referrers -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>🔗 Top Traffic Sources</h3>
+                            <div class="time-selector">
+                                <select class="referrer-period">
+                                    <option value="current">This Month</option>
+                                    <option value="last">Last Month</option>
+                                    <option value="all">All Time</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="referrers-list" id="referrers-list">
+                            <div class="referrer-item">
+                                <div class="referrer-info">
+                                    <span class="referrer-name">github.com</span>
+                                    <span class="referrer-url">Direct GitHub traffic</span>
+                                </div>
+                                <div class="referrer-stats">
+                                    <span class="referrer-count">1,234</span>
+                                    <div class="referrer-bar">
+                                        <div class="referrer-fill" style="width: 85%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="referrer-item">
+                                <div class="referrer-info">
+                                    <span class="referrer-name">google.com</span>
+                                    <span class="referrer-url">Search engine traffic</span>
+                                </div>
+                                <div class="referrer-stats">
+                                    <span class="referrer-count">567</span>
+                                    <div class="referrer-bar">
+                                        <div class="referrer-fill" style="width: 45%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="referrer-item">
+                                <div class="referrer-info">
+                                    <span class="referrer-name">twitter.com</span>
+                                    <span class="referrer-url">Social media traffic</span>
+                                </div>
+                                <div class="referrer-stats">
+                                    <span class="referrer-count">234</span>
+                                    <div class="referrer-bar">
+                                        <div class="referrer-fill" style="width: 20%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Data Table Section -->
+            <section class="table-section">
+                <div class="table-card">
+                    <div class="table-header">
+                        <h3>📋 Daily Data</h3>
+                        <div class="table-controls">
+                            <input type="search" placeholder="Search dates..." class="search-input">
+                            <button class="export-btn">📊 Export CSV</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table" id="daily-data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Views</th>
+                                    <th>Unique Visitors</th>
+                                    <th>Clones</th>
+                                    <th>Unique Cloners</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>2025-01-15</td>
+                                    <td>45</td>
+                                    <td>12</td>
+                                    <td>8</td>
+                                    <td>3</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-01-14</td>
+                                    <td>38</td>
+                                    <td>15</td>
+                                    <td>12</td>
+                                    <td>5</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-01-13</td>
+                                    <td>52</td>
+                                    <td>18</td>
+                                    <td>6</td>
+                                    <td>2</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p>Last updated: <span id="last-updated">2025-01-15 09:00 UTC</span></p>
+                <p>Data collected automatically via GitHub Actions</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
