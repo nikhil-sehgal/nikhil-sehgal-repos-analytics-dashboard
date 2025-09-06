@@ -4,10 +4,13 @@ Utility functions for GitHub Analytics Tracker.
 Common helper functions used across the application.
 """
 
+import json
 import logging
+import os
 import sys
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Dict, Any
+from pathlib import Path
 
 
 def setup_logging(level: str = 'INFO', log_file: Optional[str] = None) -> logging.Logger:
@@ -128,3 +131,151 @@ def truncate_string(text: str, max_length: int = 100) -> str:
     if len(text) <= max_length:
         return text
     return text[:max_length - 3] + "..."
+
+def safe_json_load(file_path: str) -> Dict[str, Any]:
+    """Safely load JSON from file.
+    
+    Args:
+        file_path: Path to JSON file
+    
+    Returns:
+        Dictionary from JSON file, or empty dict if file doesn't exist or is invalid
+    """
+    try:
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except (json.JSONDecodeError, IOError) as e:
+        logging.warning(f"Failed to load JSON from {file_path}: {e}")
+    
+    return {}
+
+
+def safe_json_save(data: Dict[str, Any], file_path: str) -> bool:
+    """Safely save data to JSON file.
+    
+    Args:
+        data: Data to save
+        file_path: Path to save JSON file
+    
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        # Ensure directory exists
+        ensure_directory(os.path.dirname(file_path))
+        
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        return True
+    except (IOError, TypeError) as e:
+        logging.error(f"Failed to save JSON to {file_path}: {e}")
+        return False
+
+
+def ensure_directory(directory_path: str) -> bool:
+    """Ensure directory exists, create if it doesn't.
+    
+    Args:
+        directory_path: Path to directory
+    
+    Returns:
+        True if directory exists or was created successfully
+    """
+    try:
+        if directory_path:  # Only create if path is not empty
+            Path(directory_path).mkdir(parents=True, exist_ok=True)
+        return True
+    except OSError as e:
+        logging.error(f"Failed to create directory {directory_path}: {e}")
+        return False
+
+
+def format_date_for_data_key(date: datetime) -> str:
+    """Format date for use as data key.
+    
+    Args:
+        date: Date to format
+    
+    Returns:
+        Formatted date string (YYYY-MM-DD)
+    """
+    return date.strftime('%Y-%m-%d')
+
+
+def format_month_for_data_key(date: datetime) -> str:
+    """Format date for monthly data key.
+    
+    Args:
+        date: Date to format
+    
+    Returns:
+        Formatted month string (YYYY-MM)
+    """
+    return date.strftime('%Y-%m')
+
+
+class DataFileManager:
+    """Manages data file operations and paths."""
+    
+    def __init__(self, base_path: str = 'data'):
+        """Initialize data file manager.
+        
+        Args:
+            base_path: Base directory for data files
+        """
+        self.base_path = base_path
+        ensure_directory(base_path)
+    
+    def get_repository_data_path(self, owner: str, name: str) -> str:
+        """Get path for repository data directory.
+        
+        Args:
+            owner: Repository owner
+            name: Repository name
+        
+        Returns:
+            Path to repository data directory
+        """
+        repo_path = os.path.join(self.base_path, owner, name)
+        ensure_directory(repo_path)
+        return repo_path
+    
+    def get_daily_metrics_path(self, owner: str, name: str) -> str:
+        """Get path for daily metrics file.
+        
+        Args:
+            owner: Repository owner
+            name: Repository name
+        
+        Returns:
+            Path to daily metrics JSON file
+        """
+        repo_path = self.get_repository_data_path(owner, name)
+        return os.path.join(repo_path, 'daily_metrics.json')
+    
+    def get_monthly_summary_path(self, owner: str, name: str) -> str:
+        """Get path for monthly summary file.
+        
+        Args:
+            owner: Repository owner
+            name: Repository name
+        
+        Returns:
+            Path to monthly summary JSON file
+        """
+        repo_path = self.get_repository_data_path(owner, name)
+        return os.path.join(repo_path, 'monthly_summary.json')
+    
+    def get_repository_info_path(self, owner: str, name: str) -> str:
+        """Get path for repository info file.
+        
+        Args:
+            owner: Repository owner
+            name: Repository name
+        
+        Returns:
+            Path to repository info JSON file
+        """
+        repo_path = self.get_repository_data_path(owner, name)
+        return os.path.join(repo_path, 'repository_info.json')
