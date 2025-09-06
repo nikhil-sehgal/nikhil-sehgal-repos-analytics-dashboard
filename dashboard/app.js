@@ -183,12 +183,11 @@ class GitHubAnalyticsDashboard {
     }
 
     updateSummaryCards() {
-        const summary = this.data.summary;
-
-        document.getElementById('total-views').textContent = summary.totalViews.toLocaleString();
-        document.getElementById('total-visitors').textContent = summary.totalVisitors.toLocaleString();
-        document.getElementById('total-clones').textContent = summary.totalClones.toLocaleString();
-        document.getElementById('total-unique-cloners').textContent = summary.totalUniqueCloners.toLocaleString();
+        const summary = this.data.summary || {};
+        document.getElementById('total-views').textContent = (summary.totalViews ?? 0).toLocaleString();
+        document.getElementById('total-visitors').textContent = (summary.totalVisitors ?? 0).toLocaleString();
+        document.getElementById('total-clones').textContent = (summary.totalClones ?? 0).toLocaleString();
+        document.getElementById('total-unique-cloners').textContent = (summary.totalUniqueCloners ?? 0).toLocaleString();
     }
 
     createCharts() {
