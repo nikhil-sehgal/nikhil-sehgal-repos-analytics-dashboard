@@ -91,6 +91,15 @@ class ConfigManager:
         
         return self._repositories
     
+    def get_enabled_repositories(self) -> List[Repository]:
+        """Get list of enabled repositories to track.
+        
+        Returns:
+            List of enabled Repository objects
+        """
+        all_repositories = self.get_repositories()
+        return [repo for repo in all_repositories if repo.enabled]
+    
     def get_github_token(self) -> Optional[str]:
         """Get GitHub token from environment or config.
         
