@@ -278,4 +278,21 @@ class DataFileManager:
             Path to repository info JSON file
         """
         repo_path = self.get_repository_data_path(owner, name)
-        return os.path.join(repo_path, 'repository_info.json')
+        return os.path.join(repo_path, 'repository_info.json') 
+   
+    def load_daily_data(self, owner: str, name: str, year: int) -> Dict[str, Any]:
+        """Load daily data for a repository and year.
+        
+        Args:
+            owner: Repository owner
+            name: Repository name
+            year: Year to load data for
+        
+        Returns:
+            Dictionary containing daily data for the year
+        """
+        daily_metrics_path = self.get_daily_metrics_path(owner, name)
+        daily_data = safe_json_load(daily_metrics_path)
+        
+        # Return data for the specific year, or empty dict if not found
+        return daily_data.get(str(year), {})
