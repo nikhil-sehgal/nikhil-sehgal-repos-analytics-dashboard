@@ -16,6 +16,7 @@ class Repository:
     owner: str
     name: str
     enabled: bool = True
+    last_updated: Optional[str] = None
     
     @property
     def full_name(self) -> str:
@@ -80,14 +81,15 @@ class ConfigManager:
                     # Handle "owner/name" format
                     if '/' in repo_config:
                         owner, name = repo_config.split('/', 1)
-                        self._repositories.append(Repository(owner=owner, name=name, enabled=True))
+                        self._repositories.append(Repository(owner=owner, name=name, enabled=True, last_updated=None))
                 elif isinstance(repo_config, dict):
-                    # Handle {"owner": "...", "name": "...", "enabled": ...} format
+                    # Handle {"owner": "...", "name": "...", "enabled": ..., "last_updated": ...} format
                     owner = repo_config.get('owner')
                     name = repo_config.get('name')
                     enabled = repo_config.get('enabled', True)
+                    last_updated = repo_config.get('last_updated')
                     if owner and name:
-                        self._repositories.append(Repository(owner=owner, name=name, enabled=enabled))
+                        self._repositories.append(Repository(owner=owner, name=name, enabled=enabled, last_updated=last_updated))
         
         return self._repositories
     
