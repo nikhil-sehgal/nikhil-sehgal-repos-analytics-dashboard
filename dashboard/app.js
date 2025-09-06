@@ -565,18 +565,18 @@ class GitHubDataLoader {
         this.baseUrl = 'https://raw.githubusercontent.com';
     }
 
-  async loadDailyData(repoOwner, repoName, year) {
-    const url = `${this.baseUrl}/${repoName}/main/${repoOwner}/bedrock/daily_metrics.json`;
-    const response = await fetch(url);
-    if (!response.ok) 
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    return await response.json();
+    async loadDailyData(repoOwner, repoName, year) {
+        // Use the correct owner/repo path
+        const url = `${this.baseUrl}/${this.dataRepoOwner}/${this.dataRepoName}/main/${repoOwner}/${repoName}/daily_metrics.json`;
+        const response = await fetch(url);
+        if (!response.ok) 
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        return await response.json();
     }
-
 
     async loadReferrersData(repoOwner, repoName) {
         try {
-            const url = `${this.baseUrl}/${repoName}/main/${repoOwner}/bedrock/referrers.json`;
+            const url = `${this.baseUrl}/${this.dataRepoOwner}/${this.dataRepoName}/main/${repoOwner}/${repoName}/referrers.json`;
             const response = await fetch(url);
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
