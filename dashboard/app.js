@@ -13,7 +13,7 @@ class GitHubAnalyticsDashboard {
             referrers: {},
             summary: {}
         };
-        
+
         this.init();
     }
 
@@ -21,12 +21,16 @@ class GitHubAnalyticsDashboard {
         this.setupEventListeners();
         this.setDefaultDateRange();
         this.showLoading();
-        
-        // Simulate loading delay for demo
-        setTimeout(() => {
-            this.loadSampleData();
-            this.renderDashboard();
-        }, 2000);
+
+        // Initialize data loader for real data
+        this.dataLoader = new GitHubDataLoader(
+            null, // No token needed for public repo access
+            'nikhil-sehgal',
+            'nikhil-sehgal-repos-data-collector'
+        );
+
+        // Load real data
+        this.loadRealData();
     }
 
     setupEventListeners() {
@@ -42,12 +46,12 @@ class GitHubAnalyticsDashboard {
         // Date range inputs
         const startDate = document.getElementById('start-date');
         const endDate = document.getElementById('end-date');
-        
+
         startDate.addEventListener('change', (e) => {
             this.dateRange.start = e.target.value;
             this.updateCharts();
         });
-        
+
         endDate.addEventListener('change', (e) => {
             this.dateRange.end = e.target.value;
             this.updateCharts();
@@ -58,7 +62,7 @@ class GitHubAnalyticsDashboard {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
                 e.target.classList.add('active');
-                
+
                 const period = parseInt(e.target.dataset.period);
                 this.setDateRangeFromPeriod(period);
                 this.updateCharts();
@@ -75,10 +79,10 @@ class GitHubAnalyticsDashboard {
         const endDate = new Date();
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - 30);
-        
+
         document.getElementById('start-date').value = startDate.toISOString().split('T')[0];
         document.getElementById('end-date').value = endDate.toISOString().split('T')[0];
-        
+
         this.dateRange.start = startDate.toISOString().split('T')[0];
         this.dateRange.end = endDate.toISOString().split('T')[0];
     }
@@ -87,10 +91,10 @@ class GitHubAnalyticsDashboard {
         const endDate = new Date();
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
-        
+
         document.getElementById('start-date').value = startDate.toISOString().split('T')[0];
         document.getElementById('end-date').value = endDate.toISOString().split('T')[0];
-        
+
         this.dateRange.start = startDate.toISOString().split('T')[0];
         this.dateRange.end = endDate.toISOString().split('T')[0];
     }
@@ -125,16 +129,16 @@ class GitHubAnalyticsDashboard {
         const data = {};
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - 90);
-        
+
         for (let i = 0; i < 90; i++) {
             const date = new Date(startDate);
             date.setDate(date.getDate() + i);
             const dateKey = date.toISOString().split('T')[0];
-            
+
             // Generate realistic sample data with some trends
             const baseViews = 30 + Math.sin(i / 7) * 10; // Weekly pattern
             const baseClones = 5 + Math.sin(i / 14) * 3; // Bi-weekly pattern
-            
+
             data[dateKey] = {
                 views: Math.max(0, Math.floor(baseViews + Math.random() * 20)),
                 unique_visitors: Math.max(0, Math.floor(baseViews * 0.3 + Math.random() * 8)),
@@ -143,7 +147,7 @@ class GitHubAnalyticsDashboard {
                 timestamp: date.toISOString()
             };
         }
-        
+
         return data;
     }
 
@@ -160,7 +164,7 @@ class GitHubAnalyticsDashboard {
 
     calculateSummaryStats() {
         const dailyData = Object.values(this.data.daily);
-        
+
         return {
             totalViews: dailyData.reduce((sum, day) => sum + day.views, 0),
             totalVisitors: dailyData.reduce((sum, day) => sum + day.unique_visitors, 0),
@@ -180,7 +184,7 @@ class GitHubAnalyticsDashboard {
 
     updateSummaryCards() {
         const summary = this.data.summary;
-        
+
         document.getElementById('total-views').textContent = summary.totalViews.toLocaleString();
         document.getElementById('total-visitors').textContent = summary.totalVisitors.toLocaleString();
         document.getElementById('total-clones').textContent = summary.totalClones.toLocaleString();
@@ -195,15 +199,15 @@ class GitHubAnalyticsDashboard {
 
     createViewsChart() {
         const ctx = document.getElementById('views-chart').getContext('2d');
-        
+
         const dates = Object.keys(this.data.daily).sort();
         const views = dates.map(date => this.data.daily[date].views);
         const visitors = dates.map(date => this.data.daily[date].unique_visitors);
-        
+
         if (this.charts.views) {
             this.charts.views.destroy();
         }
-        
+
         this.charts.views = new Chart(ctx, {
             type: 'line',
             data: {
@@ -261,15 +265,15 @@ class GitHubAnalyticsDashboard {
 
     createClonesChart() {
         const ctx = document.getElementById('clones-chart').getContext('2d');
-        
+
         const dates = Object.keys(this.data.daily).sort();
         const clones = dates.map(date => this.data.daily[date].clones);
         const uniqueCloners = dates.map(date => this.data.daily[date].unique_cloners);
-        
+
         if (this.charts.clones) {
             this.charts.clones.destroy();
         }
-        
+
         this.charts.clones = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -318,7 +322,7 @@ class GitHubAnalyticsDashboard {
 
     createMonthlyChart() {
         const ctx = document.getElementById('monthly-chart').getContext('2d');
-        
+
         // Group data by month
         const monthlyData = {};
         Object.entries(this.data.daily).forEach(([date, data]) => {
@@ -331,14 +335,14 @@ class GitHubAnalyticsDashboard {
             monthlyData[month].clones += data.clones;
             monthlyData[month].unique_cloners += data.unique_cloners;
         });
-        
+
         const months = Object.keys(monthlyData).sort();
         const monthlyViews = months.map(month => monthlyData[month].views);
-        
+
         if (this.charts.monthly) {
             this.charts.monthly.destroy();
         }
-        
+
         this.charts.monthly = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -380,17 +384,17 @@ class GitHubAnalyticsDashboard {
         const referrersList = document.getElementById('referrers-list');
         const referrers = this.data.referrers;
         const maxCount = Math.max(...Object.values(referrers));
-        
+
         referrersList.innerHTML = '';
-        
+
         Object.entries(referrers)
-            .sort(([,a], [,b]) => b - a)
+            .sort(([, a], [, b]) => b - a)
             .slice(0, 6)
             .forEach(([referrer, count]) => {
                 const percentage = (count / maxCount) * 100;
                 const item = document.createElement('div');
                 item.className = 'referrer-item';
-                
+
                 item.innerHTML = `
                     <div class="referrer-info">
                         <span class="referrer-name">${referrer}</span>
@@ -403,7 +407,7 @@ class GitHubAnalyticsDashboard {
                         </div>
                     </div>
                 `;
-                
+
                 referrersList.appendChild(item);
             });
     }
@@ -423,13 +427,13 @@ class GitHubAnalyticsDashboard {
     updateDataTable() {
         const tbody = document.querySelector('#daily-data-table tbody');
         const dates = Object.keys(this.data.daily).sort().reverse().slice(0, 30);
-        
+
         tbody.innerHTML = '';
-        
+
         dates.forEach(date => {
             const data = this.data.daily[date];
             const row = document.createElement('tr');
-            
+
             row.innerHTML = `
                 <td>${new Date(date).toLocaleDateString()}</td>
                 <td>${data.views}</td>
@@ -437,14 +441,14 @@ class GitHubAnalyticsDashboard {
                 <td>${data.clones}</td>
                 <td>${data.unique_cloners}</td>
             `;
-            
+
             tbody.appendChild(row);
         });
     }
 
     updateLastUpdated() {
         const now = new Date();
-        document.getElementById('last-updated').textContent = 
+        document.getElementById('last-updated').textContent =
             now.toLocaleDateString() + ' ' + now.toLocaleTimeString() + ' UTC';
     }
 
@@ -454,25 +458,82 @@ class GitHubAnalyticsDashboard {
         console.log('Updating charts for date range:', this.dateRange);
     }
 
-    loadRepositoryData() {
+    async loadRepositoryData() {
         this.showLoading();
-        
-        // Simulate API call
-        setTimeout(() => {
+
+        if (this.currentRepo) {
+            const [owner, name] = this.currentRepo.split('/');
+            await this.loadRealDataForRepo(owner, name);
+        }
+
+        this.renderDashboard();
+    }
+
+    async loadRealData() {
+        // Load data for the default repository (bedrock)
+        await this.loadRealDataForRepo('nikhil-sehgal', 'bedrock');
+        this.renderDashboard();
+    }
+
+    async loadRealDataForRepo(owner, name) {
+        try {
+            // Load daily metrics data
+            const currentYear = new Date().getFullYear();
+            const dailyData = await this.dataLoader.loadDailyData(owner, name, currentYear);
+
+            if (dailyData && Object.keys(dailyData).length > 0) {
+                this.data.daily = this.convertDailyData(dailyData);
+            } else {
+                console.log('No real data found, using sample data');
+                this.loadSampleData();
+                return;
+            }
+
+            // Try to load referrers data (optional)
+            try {
+                const referrersData = await this.dataLoader.loadReferrersData(owner, name);
+                if (referrersData) {
+                    this.data.referrers = referrersData;
+                }
+            } catch (error) {
+                console.log('No referrers data found, using empty data');
+                this.data.referrers = {};
+            }
+
+        } catch (error) {
+            console.error('Error loading real data:', error);
+            console.log('Falling back to sample data');
             this.loadSampleData();
-            this.renderDashboard();
-        }, 1000);
+        }
+    }
+
+    convertDailyData(dailyData) {
+        // Convert the daily metrics format to the format expected by the dashboard
+        const converted = {};
+
+        for (const [year, yearData] of Object.entries(dailyData)) {
+            for (const [date, dayData] of Object.entries(yearData)) {
+                converted[date] = {
+                    views: dayData.views || 0,
+                    unique_views: dayData.unique_views || 0,
+                    clones: dayData.clones || 0,
+                    unique_clones: dayData.unique_clones || 0
+                };
+            }
+        }
+
+        return converted;
     }
 
     exportToCSV() {
         const dates = Object.keys(this.data.daily).sort();
         let csv = 'Date,Views,Unique Visitors,Clones,Unique Cloners\n';
-        
+
         dates.forEach(date => {
             const data = this.data.daily[date];
             csv += `${date},${data.views},${data.unique_visitors},${data.clones},${data.unique_cloners}\n`;
         });
-        
+
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -507,7 +568,7 @@ class GitHubDataLoader {
     async loadDailyData(repoOwner, repoName, year) {
         try {
             const response = await fetch(
-                `${this.baseUrl}/repos/${this.dataRepoOwner}/${this.dataRepoName}/contents/repos/${repoOwner}_${repoName}/daily_${year}.json`,
+                `${this.baseUrl}/repos/${this.dataRepoOwner}/${this.dataRepoName}/contents/${repoOwner}/${repoName}/daily_metrics.json`,
                 {
                     headers: {
                         'Authorization': `token ${this.token}`,
@@ -515,11 +576,11 @@ class GitHubDataLoader {
                     }
                 }
             );
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
-            
+
             const data = await response.json();
             const content = JSON.parse(atob(data.content));
             return content;
@@ -532,7 +593,7 @@ class GitHubDataLoader {
     async loadReferrersData(repoOwner, repoName) {
         try {
             const response = await fetch(
-                `${this.baseUrl}/repos/${this.dataRepoOwner}/${this.dataRepoName}/contents/repos/${repoOwner}_${repoName}/referrers.json`,
+                `${this.baseUrl}/repos/${this.dataRepoOwner}/${this.dataRepoName}/contents/${repoOwner}/${repoName}/referrers.json`,
                 {
                     headers: {
                         'Authorization': `token ${this.token}`,
@@ -540,11 +601,11 @@ class GitHubDataLoader {
                     }
                 }
             );
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
-            
+
             const data = await response.json();
             const content = JSON.parse(atob(data.content));
             return content;
