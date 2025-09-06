@@ -43,23 +43,21 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.DATA_REPO_TOKEN }}
       run: |
-        cd scripts
-        python collect_data.py --validate-only --log-level INFO
+        python scripts/collect_data.py --validate-only --log-level INFO
     
     - name: Collect analytics data
       env:
         GITHUB_TOKEN: ${{ secrets.DATA_REPO_TOKEN }}
       run: |
-        cd scripts
         if [ "${{ github.event.inputs.repository }}" != "" ]; then
           echo "Collecting data for specific repository: ${{ github.event.inputs.repository }}"
-          python collect_data.py \
+          python scripts/collect_data.py \
             --repository "${{ github.event.inputs.repository }}" \
             --log-level INFO \
             ${{ github.event.inputs.include_historical == 'true' && '--include-historical' || '' }}
         else
           echo "Collecting data for all repositories"
-          python collect_data.py \
+          python scripts/collect_data.py \
             --log-level INFO \
             ${{ github.event.inputs.include_historical == 'true' && '--include-historical' || '' }}
         fi
