@@ -483,6 +483,8 @@ class GitHubAnalyticsDashboard {
 
             if (dailyData && Object.keys(dailyData).length > 0) {
                 this.data.daily = this.convertDailyData(dailyData);
+                // Add this line to calculate summary stats from real data
+                this.data.summary = this.calculateSummaryStats();
             } else {
                 console.log('No real data found, using sample data');
                 this.loadSampleData();
