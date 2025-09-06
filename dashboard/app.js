@@ -571,7 +571,12 @@ class GitHubDataLoader {
         const response = await fetch(url);
         if (!response.ok) 
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        return await response.json();
+        
+        // After fetching and parsing:
+        const data = await response.json();
+        console.log('Fetched daily data:', data);
+
+        return data;
     }
 
     // async loadReferrersData(repoOwner, repoName) {
