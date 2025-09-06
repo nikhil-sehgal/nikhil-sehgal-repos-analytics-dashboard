@@ -136,8 +136,7 @@ class DataCollectionOrchestrator:
     def validate_configuration(self) -> bool:
         """Validate configuration and repository access."""
         try:
-            config = self.config_manager.load_config()
-            repositories = config.repositories
+            repositories = self.config_manager.get_repositories()
             
             if not repositories:
                 self.logger.error("No repositories configured")

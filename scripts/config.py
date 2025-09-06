@@ -15,6 +15,7 @@ class Repository:
     """Represents a repository configuration."""
     owner: str
     name: str
+    enabled: bool = True
     
     @property
     def full_name(self) -> str:
@@ -79,13 +80,14 @@ class ConfigManager:
                     # Handle "owner/name" format
                     if '/' in repo_config:
                         owner, name = repo_config.split('/', 1)
-                        self._repositories.append(Repository(owner=owner, name=name))
+                        self._repositories.append(Repository(owner=owner, name=name, enabled=True))
                 elif isinstance(repo_config, dict):
-                    # Handle {"owner": "...", "name": "..."} format
+                    # Handle {"owner": "...", "name": "...", "enabled": ...} format
                     owner = repo_config.get('owner')
                     name = repo_config.get('name')
+                    enabled = repo_config.get('enabled', True)
                     if owner and name:
-                        self._repositories.append(Repository(owner=owner, name=name))
+                        self._repositories.append(Repository(owner=owner, name=name, enabled=enabled))
         
         return self._repositories
     
