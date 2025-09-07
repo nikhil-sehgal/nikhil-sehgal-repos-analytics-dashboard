@@ -333,10 +333,15 @@ class GitHubDataCollector:
         try:
             referrers_data = self.api_client.get_traffic_referrers(owner, repo)
             
-            # Transform to simple dict
+            # Transform to simple dict and log details
             referrers = {}
+            self.logger.info(f"Referrers API data: {len(referrers_data)} referrers")
             for referrer in referrers_data:
-                referrers[referrer.get('referrer', 'unknown')] = referrer.get('count', 0)
+                referrer_name = referrer.get('referrer', 'unknown')
+                count = referrer.get('count', 0)
+                uniques = referrer.get('uniques', 0)
+                referrers[referrer_name] = count
+                self.logger.info(f"  Referrer {referrer_name}: {count} views, {uniques} unique visitors")
             
             self.logger.info(f"Collected {len(referrers)} referrers")
             return referrers
