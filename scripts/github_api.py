@@ -326,6 +326,30 @@ class GitHubDataCollector:
         
         return complete_data
     
+    def collect_repository_metadata(self, owner: str, repo: str) -> Dict[str, int]:
+        """Collect repository metadata (stars, forks, etc.)."""
+        self.logger.info(f"Collecting repository metadata for {owner}/{repo}")
+        
+        try:
+            repo_info = self.api_client.get_repository_info(owner, repo)
+            
+            metadata = {
+                'stars': repo_info.get('stargazers_count', 0),
+                'forks': repo_info.get('forks_count', 0),
+                'watchers': repo_info.get('watchers_count', 0),
+                'open_issues': repo_info.get('open_issues_count', 0),
+                'size': repo_info.get('size', 0)  # Repository size in KB
+            }
+            
+            self.logger.info(f"Repository metadata: {metadata['stars']} stars, {metadata['forks']} forks, "
+                           f"{metadata['watchers']} watchers, {metadata['open_issues']} open issues")
+            
+            return metadata
+            
+        except GitHubAPIError as e:
+            self.logger.error(f"Failed to collect repository metadata for {owner}/{repo}: {e}")
+            raise
+
     def collect_referrers_data(self, owner: str, repo: str) -> Dict[str, int]:
         """Collect referrers data for a repository."""
         self.logger.info(f"Collecting referrers data for {owner}/{repo}")
