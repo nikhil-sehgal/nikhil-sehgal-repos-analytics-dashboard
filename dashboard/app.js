@@ -573,14 +573,11 @@ class GitHubDataLoader {
     }
 
     async loadDailyData(repoOwner, repoName, year) {
-        // Use the correct owner/repo path
-        //const url = `${this.baseUrl}/${this.dataRepoOwner}/${this.dataRepoName}/main/${repoOwner}/${repoName}/daily_metrics.json`;
-        const url = 'https://raw.githubusercontent.com/nikhil-sehgal/nikhil-sehgal-repos-data-collector/main/nikhil-sehgal/bedrock/daily_metrics.json'
+        const url = `${this.baseUrl}/${this.dataRepoOwner}/${this.dataRepoName}/main/${repoOwner}/${repoName}/daily_metrics.json`;
         const response = await fetch(url);
         if (!response.ok) 
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         
-        // After fetching and parsing:
         const data = await response.json();
         console.log('Fetched daily data:', data);
 
