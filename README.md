@@ -1,2 +1,4 @@
 # nikhil-sehgal-repos-analytics-dashboard
-This repo shows the analytic data for all the repos beyond 14 days
+Dashboard shows the analytic data for all my repos beyond 14 days
+
+https://nikhil-sehgal.github.io/nikhil-sehgal-repos-analytics-dashboard/dashboard/
