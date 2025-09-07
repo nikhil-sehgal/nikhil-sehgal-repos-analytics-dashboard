@@ -188,6 +188,38 @@ class GitHubAnalyticsDashboard {
         document.getElementById('total-visitors').textContent = (summary.totalVisitors ?? 0).toLocaleString();
         document.getElementById('total-clones').textContent = (summary.totalClones ?? 0).toLocaleString();
         document.getElementById('total-unique-cloners').textContent = (summary.totalUniqueCloners ?? 0).toLocaleString();
+        
+        // Update repository metadata
+        this.updateRepositoryMetadata();
+    }
+
+    updateRepositoryMetadata() {
+        const metadata = this.data.metadata || {};
+        
+        // Get latest metadata (most recent date)
+        const dates = Object.keys(metadata).sort().reverse();
+        const latestData = dates.length > 0 ? metadata[dates[0]] : {};
+        
+        // Update stars and forks
+        document.getElementById('total-stars').textContent = (latestData.stars ?? 0).toLocaleString();
+        document.getElementById('total-forks').textContent = (latestData.forks ?? 0).toLocaleString();
+        
+        // Calculate changes if we have multiple data points
+        if (dates.length >= 2) {
+            const previousData = metadata[dates[1]];
+            const starsChange = (latestData.stars ?? 0) - (previousData.stars ?? 0);
+            const forksChange = (latestData.forks ?? 0) - (previousData.forks ?? 0);
+            
+            document.getElementById('stars-change').textContent = starsChange >= 0 ? `+${starsChange}` : `${starsChange}`;
+            document.getElementById('forks-change').textContent = forksChange >= 0 ? `+${forksChange}` : `${forksChange}`;
+            
+            // Add appropriate CSS classes
+            document.getElementById('stars-change').className = `card-change ${starsChange > 0 ? 'positive' : starsChange < 0 ? 'negative' : 'neutral'}`;
+            document.getElementById('forks-change').className = `card-change ${forksChange > 0 ? 'positive' : forksChange < 0 ? 'negative' : 'neutral'}`;
+        } else {
+            document.getElementById('stars-change').textContent = '-';
+            document.getElementById('forks-change').textContent = '-';
+        }
     }
 
     createCharts() {
@@ -499,12 +531,26 @@ class GitHubAnalyticsDashboard {
                     console.log('No referrers data found');
                     this.data.referrers = {};
                 }
+
+                // Load repository metadata (stars, forks)
+                try {
+                    const metadataData = await this.dataLoader.loadRepositoryMetadata(owner, name);
+                    if (metadataData) {
+                        this.data.metadata = metadataData;
+                    } else {
+                        this.data.metadata = {};
+                    }
+                } catch (error) {
+                    console.log('No repository metadata found');
+                    this.data.metadata = {};
+                }
             } else {
                 console.log(`No data found for ${owner}/${name}`);
                 // Clear data instead of loading sample data
                 this.data.daily = {};
                 this.data.referrers = {};
                 this.data.summary = {};
+                this.data.metadata = {};
             }
 
         } catch (error) {
@@ -513,6 +559,7 @@ class GitHubAnalyticsDashboard {
             this.data.daily = {};
             this.data.referrers = {};
             this.data.summary = {};
+            this.data.metadata = {};
         }
     }
 
@@ -584,17 +631,31 @@ class GitHubDataLoader {
         return data;
     }
 
-    // async loadReferrersData(repoOwner, repoName) {
-    //     try {
-    //         const url = `${this.baseUrl}/${this.dataRepoOwner}/${this.dataRepoName}/main/${repoOwner}/${repoName}/referrers.json`;
-    //         const response = await fetch(url);
-    //         if (!response.ok) {
-    //             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    //         }
-    //         return await response.json();
-    //     } catch (error) {
-    //         console.error('Error loading referrers data:', error);
-    //         return {};
-    //     }
-    // }
+    async loadReferrersData(repoOwner, repoName) {
+        try {
+            const url = `${this.baseUrl}/${this.dataRepoOwner}/${this.dataRepoName}/main/${repoOwner}/${repoName}/referrers.json`;
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error loading referrers data:', error);
+            return {};
+        }
+    }
+
+    async loadRepositoryMetadata(repoOwner, repoName) {
+        try {
+            const url = `${this.baseUrl}/${this.dataRepoOwner}/${this.dataRepoName}/main/${repoOwner}/${repoName}/repository_metadata.json`;
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error loading repository metadata:', error);
+            return {};
+        }
+    }
 }
