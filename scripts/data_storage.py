@@ -240,12 +240,17 @@ class AnalyticsDataStorage:
         """Store historical data from GitHub API (initial 14-day data)."""
         try:
             success_count = 0
+            current_date = datetime.now(timezone.utc).date()
             
-            # Process views data
+            # Process views data (skip current day to avoid overwriting)
             for day_data in views_daily:
                 timestamp = day_data.get('timestamp', '')
                 if timestamp:
                     date = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                    # Skip current day to avoid overwriting current data
+                    if date.date() == current_date:
+                        continue
+                        
                     success = self.store_daily_metrics(
                         owner, repo, date,
                         views=day_data.get('count', 0),
@@ -256,11 +261,15 @@ class AnalyticsDataStorage:
                     if success:
                         success_count += 1
             
-            # Process clones data and update existing entries
+            # Process clones data and update existing entries (skip current day)
             for day_data in clones_daily:
                 timestamp = day_data.get('timestamp', '')
                 if timestamp:
                     date = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                    # Skip current day to avoid overwriting current data
+                    if date.date() == current_date:
+                        continue
+                        
                     year = date.year
                     date_key = format_date_for_data_key(date)
                     
