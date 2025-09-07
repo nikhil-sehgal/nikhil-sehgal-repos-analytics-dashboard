@@ -264,6 +264,21 @@ class GitHubDataCollector:
             views_daily = views_data.get('views', [])
             clones_daily = clones_data.get('clones', [])
             
+            # Log detailed data from API
+            self.logger.info(f"Views API data: {len(views_daily)} days")
+            for day in views_daily:
+                timestamp = day.get('timestamp', 'N/A')
+                count = day.get('count', 0)
+                uniques = day.get('uniques', 0)
+                self.logger.info(f"  Views {timestamp}: {count} views, {uniques} unique visitors")
+            
+            self.logger.info(f"Clones API data: {len(clones_daily)} days")
+            for day in clones_daily:
+                timestamp = day.get('timestamp', 'N/A')
+                count = day.get('count', 0)
+                uniques = day.get('uniques', 0)
+                self.logger.info(f"  Clones {timestamp}: {count} clones, {uniques} unique cloners")
+            
             self.logger.info(f"Collected {len(views_daily)} days of views data, "
                            f"{len(clones_daily)} days of clones data")
             
