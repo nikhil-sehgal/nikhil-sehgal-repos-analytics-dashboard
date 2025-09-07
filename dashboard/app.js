@@ -485,7 +485,6 @@ class GitHubAnalyticsDashboard {
 
             if (dailyData && Object.keys(dailyData).length > 0) {
                 this.data.daily = this.convertDailyData(dailyData);
-                // Add this line to calculate summary stats from real data
                 this.data.summary = this.calculateSummaryStats();
                 
                 // Try to load referrers data (optional)
@@ -493,20 +492,27 @@ class GitHubAnalyticsDashboard {
                     const referrersData = await this.dataLoader.loadReferrersData(owner, name);
                     if (referrersData) {
                         this.data.referrers = referrersData;
+                    } else {
+                        this.data.referrers = {};
                     }
                 } catch (error) {
-                    console.log('No referrers data found, using empty data');
+                    console.log('No referrers data found');
                     this.data.referrers = {};
                 }
             } else {
-                console.log(`No real data found for ${owner}/${name}, using sample data`);
-                this.loadSampleData();
+                console.log(`No data found for ${owner}/${name}`);
+                // Clear data instead of loading sample data
+                this.data.daily = {};
+                this.data.referrers = {};
+                this.data.summary = {};
             }
 
         } catch (error) {
-            console.error('Error loading real data:', error);
-            console.log('Falling back to sample data');
-            this.loadSampleData();
+            console.error('Error loading data:', error);
+            // Clear data instead of loading sample data
+            this.data.daily = {};
+            this.data.referrers = {};
+            this.data.summary = {};
         }
     }
 
