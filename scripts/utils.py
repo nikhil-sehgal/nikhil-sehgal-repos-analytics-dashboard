@@ -319,3 +319,43 @@ class DataFileManager:
         
         # Save updated data
         return safe_json_save(existing_data, daily_metrics_path)
+    
+    def get_referrers_path(self, owner: str, name: str) -> str:
+        """Get path for referrers file.
+        
+        Args:
+            owner: Repository owner
+            name: Repository name
+        
+        Returns:
+            Path to referrers JSON file
+        """
+        repo_path = self.get_repository_data_path(owner, name)
+        return os.path.join(repo_path, 'referrers.json')
+    
+    def load_referrers_data(self, owner: str, name: str) -> Dict[str, Any]:
+        """Load referrers data for a repository.
+        
+        Args:
+            owner: Repository owner
+            name: Repository name
+        
+        Returns:
+            Dictionary containing referrers data
+        """
+        referrers_path = self.get_referrers_path(owner, name)
+        return safe_json_load(referrers_path)
+    
+    def save_referrers_data(self, owner: str, name: str, data: Dict[str, Any]) -> bool:
+        """Save referrers data for a repository.
+        
+        Args:
+            owner: Repository owner
+            name: Repository name
+            data: Referrers data to save
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        referrers_path = self.get_referrers_path(owner, name)
+        return safe_json_save(data, referrers_path)
