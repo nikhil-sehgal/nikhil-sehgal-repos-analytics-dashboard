@@ -359,3 +359,43 @@ class DataFileManager:
         """
         referrers_path = self.get_referrers_path(owner, name)
         return safe_json_save(data, referrers_path)
+    
+    def get_repository_metadata_path(self, owner: str, name: str) -> str:
+        """Get path for repository metadata file.
+        
+        Args:
+            owner: Repository owner
+            name: Repository name
+        
+        Returns:
+            Path to repository metadata JSON file
+        """
+        repo_path = self.get_repository_data_path(owner, name)
+        return os.path.join(repo_path, 'repository_metadata.json')
+    
+    def load_repository_metadata(self, owner: str, name: str) -> Dict[str, Any]:
+        """Load repository metadata for a repository.
+        
+        Args:
+            owner: Repository owner
+            name: Repository name
+        
+        Returns:
+            Dictionary containing repository metadata
+        """
+        metadata_path = self.get_repository_metadata_path(owner, name)
+        return safe_json_load(metadata_path)
+    
+    def save_repository_metadata(self, owner: str, name: str, data: Dict[str, Any]) -> bool:
+        """Save repository metadata for a repository.
+        
+        Args:
+            owner: Repository owner
+            name: Repository name
+            data: Repository metadata to save
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        metadata_path = self.get_repository_metadata_path(owner, name)
+        return safe_json_save(data, metadata_path)
