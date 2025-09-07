@@ -471,6 +471,9 @@ class GitHubAnalyticsDashboard {
     async loadRealData() {
         // Load data for the default repository (bedrock)
         await this.loadRealDataForRepo('nikhil-sehgal', 'bedrock');
+        // Set the default selection in dropdown
+        document.getElementById('repo-selector').value = 'nikhil-sehgal/bedrock';
+        this.currentRepo = 'nikhil-sehgal/bedrock';
         this.renderDashboard();
     }
 
