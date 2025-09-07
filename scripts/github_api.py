@@ -264,29 +264,67 @@ class GitHubDataCollector:
             views_daily = views_data.get('views', [])
             clones_daily = clones_data.get('clones', [])
             
+            # Fill in missing days with zeros for complete 14-day dataset
+            views_complete = self._fill_missing_days(views_daily)
+            clones_complete = self._fill_missing_days(clones_daily)
+            
             # Log detailed data from API
-            self.logger.info(f"Views API data: {len(views_daily)} days")
-            for day in views_daily:
+            self.logger.info(f"Views API data: {len(views_daily)} active days, {len(views_complete)} total days")
+            for day in views_complete:
                 timestamp = day.get('timestamp', 'N/A')
                 count = day.get('count', 0)
                 uniques = day.get('uniques', 0)
                 self.logger.info(f"  Views {timestamp}: {count} views, {uniques} unique visitors")
             
-            self.logger.info(f"Clones API data: {len(clones_daily)} days")
-            for day in clones_daily:
+            self.logger.info(f"Clones API data: {len(clones_daily)} active days, {len(clones_complete)} total days")
+            for day in clones_complete:
                 timestamp = day.get('timestamp', 'N/A')
                 count = day.get('count', 0)
                 uniques = day.get('uniques', 0)
                 self.logger.info(f"  Clones {timestamp}: {count} clones, {uniques} unique cloners")
             
-            self.logger.info(f"Collected {len(views_daily)} days of views data, "
-                           f"{len(clones_daily)} days of clones data")
-            
-            return views_daily, clones_daily
+            return views_complete, clones_complete
             
         except GitHubAPIError as e:
             self.logger.error(f"Failed to collect historical data for {owner}/{repo}: {e}")
             raise
+    
+    def _fill_missing_days(self, daily_data: List[Dict]) -> List[Dict]:
+        """Fill missing days with zero values for complete 14-day dataset."""
+        from datetime import datetime, timedelta, timezone
+        
+        # Create a set of dates that have data
+        existing_dates = set()
+        data_by_date = {}
+        
+        for day in daily_data:
+            timestamp = day.get('timestamp', '')
+            if timestamp:
+                date = datetime.fromisoformat(timestamp.replace('Z', '+00:00')).date()
+                existing_dates.add(date)
+                data_by_date[date] = day
+        
+        # Generate complete 14-day range ending today
+        end_date = datetime.now(timezone.utc).date()
+        start_date = end_date - timedelta(days=13)  # 14 days total including today
+        
+        complete_data = []
+        current_date = start_date
+        
+        while current_date <= end_date:
+            if current_date in existing_dates:
+                # Use existing data
+                complete_data.append(data_by_date[current_date])
+            else:
+                # Add zero entry for missing day
+                complete_data.append({
+                    'timestamp': current_date.strftime('%Y-%m-%dT00:00:00Z'),
+                    'count': 0,
+                    'uniques': 0
+                })
+            current_date += timedelta(days=1)
+        
+        return complete_data
     
     def collect_referrers_data(self, owner: str, repo: str) -> Dict[str, int]:
         """Collect referrers data for a repository."""
