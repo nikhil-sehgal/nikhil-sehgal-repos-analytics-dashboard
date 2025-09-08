@@ -31,8 +31,8 @@ class GitHubAnalyticsDashboard {
         // Load real data
         this.loadRealData();
         
-        // Load portfolio overview
-        this.loadPortfolioOverview();
+        // Load available repositories and portfolio overview
+        this.loadAvailableRepositories();
     }
 
     setupEventListeners() {
@@ -588,12 +588,94 @@ class GitHubAnalyticsDashboard {
         }
     }
 
-    async loadPortfolioOverview() {
+    async loadAvailableRepositories() {
         try {
-            const repos = ['nikhil-sehgal/bedrock', 'nikhil-sehgal/Chrome-Tab-Changer'];
+            // Try to load a list of known repositories from your data
+            // We'll check for common repo patterns or use a predefined list
+            const knownRepos = [
+                'nikhil-sehgal/bedrock',
+                'nikhil-sehgal/Chrome-Tab-Changer'
+            ];
+            
+            // Try to discover additional repos by checking for data files
+            const availableRepos = [];
+            
+            for (const repo of knownRepos) {
+                const [owner, name] = repo.split('/');
+                try {
+                    // Check if repo has data by trying to load daily metrics
+                    const currentYear = new Date().getFullYear();
+                    const dailyData = await this.dataLoader.loadDailyData(owner, name, currentYear);
+                    if (dailyData && Object.keys(dailyData).length > 0) {
+                        availableRepos.push(repo);
+                    }
+                } catch (error) {
+                    console.log(`No data found for ${repo}`);
+                }
+            }
+            
+            // Add any additional repos you want to check
+            const additionalRepos = [
+                'nikhil-sehgal/github-traffic-insights', // Add your new repo here
+                'nikhil-sehgal/another-repo' // Add more as needed
+            ];
+            
+            for (const repo of additionalRepos) {
+                if (!availableRepos.includes(repo)) {
+                    const [owner, name] = repo.split('/');
+                    try {
+                        const currentYear = new Date().getFullYear();
+                        const dailyData = await this.dataLoader.loadDailyData(owner, name, currentYear);
+                        if (dailyData && Object.keys(dailyData).length > 0) {
+                            availableRepos.push(repo);
+                        }
+                    } catch (error) {
+                        console.log(`No data found for ${repo}`);
+                    }
+                }
+            }
+            
+            // Update repository selector
+            this.updateRepositorySelector(availableRepos);
+            
+            // Load portfolio overview with discovered repos
+            this.loadPortfolioOverview(availableRepos);
+            
+        } catch (error) {
+            console.error('Error loading available repositories:', error);
+            // Fallback to hardcoded repos
+            const fallbackRepos = ['nikhil-sehgal/bedrock', 'nikhil-sehgal/Chrome-Tab-Changer'];
+            this.updateRepositorySelector(fallbackRepos);
+            this.loadPortfolioOverview(fallbackRepos);
+        }
+    }
+
+    updateRepositorySelector(repos) {
+        const selector = document.getElementById('repo-selector');
+        if (!selector) return;
+        
+        // Clear existing options except the first one
+        selector.innerHTML = '<option value="">Select Repository</option>';
+        
+        // Add discovered repositories
+        repos.forEach(repo => {
+            const option = document.createElement('option');
+            option.value = repo;
+            option.textContent = repo;
+            selector.appendChild(option);
+        });
+        
+        console.log(`Updated repository selector with ${repos.length} repositories:`, repos);
+    }
+
+    async loadPortfolioOverview(repos = null) {
+    async loadPortfolioOverview(repos = null) {
+        try {
+            // Use provided repos or fallback to hardcoded list
+            const repoList = repos || ['nikhil-sehgal/bedrock', 'nikhil-sehgal/Chrome-Tab-Changer'];
             let totalViews = 0, totalVisitors = 0, totalClones = 0, totalStars = 0;
             
-            for (const repo of repos) {
+            for (const repo of repoList) {
                 const [owner, name] = repo.split('/');
                 
                 // Load daily data
@@ -627,11 +709,14 @@ class GitHubAnalyticsDashboard {
             document.getElementById('total-portfolio-visitors').textContent = totalVisitors.toLocaleString();
             document.getElementById('total-portfolio-clones').textContent = totalClones.toLocaleString();
             document.getElementById('total-portfolio-stars').textContent = totalStars.toLocaleString();
-            document.getElementById('total-repos').textContent = repos.length;
+            document.getElementById('total-repos').textContent = repoList.length;
+            
+            console.log(`Portfolio overview loaded for ${repoList.length} repositories`);
             
         } catch (error) {
             console.error('Error loading portfolio overview:', error);
         }
+    }
     }
 
     convertDailyData(dailyData) {
