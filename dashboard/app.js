@@ -30,6 +30,9 @@ class GitHubAnalyticsDashboard {
 
         // Load real data
         this.loadRealData();
+        
+        // Load portfolio overview
+        this.loadPortfolioOverview();
     }
 
     setupEventListeners() {
@@ -582,6 +585,52 @@ class GitHubAnalyticsDashboard {
             this.data.referrers = {};
             this.data.summary = {};
             this.data.metadata = {};
+        }
+    }
+
+    async loadPortfolioOverview() {
+        try {
+            const repos = ['nikhil-sehgal/bedrock', 'nikhil-sehgal/Chrome-Tab-Changer'];
+            let totalViews = 0, totalVisitors = 0, totalClones = 0, totalStars = 0;
+            
+            for (const repo of repos) {
+                const [owner, name] = repo.split('/');
+                
+                // Load daily data
+                const currentYear = new Date().getFullYear();
+                const dailyData = await this.dataLoader.loadDailyData(owner, name, currentYear);
+                
+                if (dailyData && Object.keys(dailyData).length > 0) {
+                    const convertedDaily = this.convertDailyData(dailyData);
+                    const dailyValues = Object.values(convertedDaily);
+                    
+                    totalViews += dailyValues.reduce((sum, day) => sum + day.views, 0);
+                    totalVisitors += dailyValues.reduce((sum, day) => sum + day.unique_visitors, 0);
+                    totalClones += dailyValues.reduce((sum, day) => sum + day.clones, 0);
+                }
+                
+                // Load repository metadata for stars
+                try {
+                    const metadataData = await this.dataLoader.loadRepositoryMetadata(owner, name);
+                    if (metadataData && Object.keys(metadataData).length > 0) {
+                        const dates = Object.keys(metadataData).sort().reverse();
+                        const latestData = metadataData[dates[0]] || {};
+                        totalStars += latestData.stars || 0;
+                    }
+                } catch (error) {
+                    console.log(`No metadata for ${repo}`);
+                }
+            }
+            
+            // Update portfolio overview display
+            document.getElementById('total-portfolio-views').textContent = totalViews.toLocaleString();
+            document.getElementById('total-portfolio-visitors').textContent = totalVisitors.toLocaleString();
+            document.getElementById('total-portfolio-clones').textContent = totalClones.toLocaleString();
+            document.getElementById('total-portfolio-stars').textContent = totalStars.toLocaleString();
+            document.getElementById('total-repos').textContent = repos.length;
+            
+        } catch (error) {
+            console.error('Error loading portfolio overview:', error);
         }
     }
 
