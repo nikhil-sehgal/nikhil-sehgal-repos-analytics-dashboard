@@ -19,7 +19,6 @@ class GitHubAnalyticsDashboard {
 
     init() {
         this.setupEventListeners();
-        this.setDefaultDateRange();
         this.showLoading();
 
         // Initialize data loader for real data
@@ -31,6 +30,9 @@ class GitHubAnalyticsDashboard {
 
         // Load real data
         this.loadRealData();
+        
+        // Load portfolio overview
+        this.loadPortfolioOverview();
     }
 
     setupEventListeners() {
@@ -41,20 +43,6 @@ class GitHubAnalyticsDashboard {
             if (this.currentRepo) {
                 this.loadRepositoryData();
             }
-        });
-
-        // Date range inputs
-        const startDate = document.getElementById('start-date');
-        const endDate = document.getElementById('end-date');
-
-        startDate.addEventListener('change', (e) => {
-            this.dateRange.start = e.target.value;
-            this.updateCharts();
-        });
-
-        endDate.addEventListener('change', (e) => {
-            this.dateRange.end = e.target.value;
-            this.updateCharts();
         });
 
         // Period buttons
@@ -73,18 +61,15 @@ class GitHubAnalyticsDashboard {
         document.querySelector('.export-btn').addEventListener('click', () => {
             this.exportToCSV();
         });
-    }
 
-    setDefaultDateRange() {
-        const endDate = new Date();
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - 30);
-
-        document.getElementById('start-date').value = startDate.toISOString().split('T')[0];
-        document.getElementById('end-date').value = endDate.toISOString().split('T')[0];
-
-        this.dateRange.start = startDate.toISOString().split('T')[0];
-        this.dateRange.end = endDate.toISOString().split('T')[0];
+        // Monthly chart metric selector
+        const metricSelector = document.querySelector('.metric-selector');
+        if (metricSelector) {
+            metricSelector.addEventListener('change', (e) => {
+                this.selectedMetric = e.target.value;
+                this.createMonthlyChart();
+            });
+        }
     }
 
     setDateRangeFromPeriod(days) {
@@ -188,6 +173,43 @@ class GitHubAnalyticsDashboard {
         document.getElementById('total-visitors').textContent = (summary.totalVisitors ?? 0).toLocaleString();
         document.getElementById('total-clones').textContent = (summary.totalClones ?? 0).toLocaleString();
         document.getElementById('total-unique-cloners').textContent = (summary.totalUniqueCloners ?? 0).toLocaleString();
+        
+        // Update repository metadata
+        this.updateRepositoryMetadata();
+    }
+
+    updateRepositoryMetadata() {
+        const metadata = this.data.metadata || {};
+        
+        // Get latest metadata (most recent date)
+        const dates = Object.keys(metadata).sort().reverse();
+        const latestData = dates.length > 0 ? metadata[dates[0]] : {};
+        
+        // Update stars and forks (with null checks)
+        const starsElement = document.getElementById('total-stars');
+        const forksElement = document.getElementById('total-forks');
+        const starsChangeElement = document.getElementById('stars-change');
+        const forksChangeElement = document.getElementById('forks-change');
+        
+        if (starsElement) starsElement.textContent = (latestData.stars ?? 0).toLocaleString();
+        if (forksElement) forksElement.textContent = (latestData.forks ?? 0).toLocaleString();
+        
+        // Calculate changes if we have multiple data points
+        if (dates.length >= 2 && starsChangeElement && forksChangeElement) {
+            const previousData = metadata[dates[1]];
+            const starsChange = (latestData.stars ?? 0) - (previousData.stars ?? 0);
+            const forksChange = (latestData.forks ?? 0) - (previousData.forks ?? 0);
+            
+            starsChangeElement.textContent = starsChange >= 0 ? `+${starsChange}` : `${starsChange}`;
+            forksChangeElement.textContent = forksChange >= 0 ? `+${forksChange}` : `${forksChange}`;
+            
+            // Add appropriate CSS classes
+            starsChangeElement.className = `card-change ${starsChange > 0 ? 'positive' : starsChange < 0 ? 'negative' : 'neutral'}`;
+            forksChangeElement.className = `card-change ${forksChange > 0 ? 'positive' : forksChange < 0 ? 'negative' : 'neutral'}`;
+        } else {
+            if (starsChangeElement) starsChangeElement.textContent = '-';
+            if (forksChangeElement) forksChangeElement.textContent = '-';
+        }
     }
 
     createCharts() {
@@ -274,23 +296,27 @@ class GitHubAnalyticsDashboard {
         }
 
         this.charts.clones = new Chart(ctx, {
-            type: 'bar',
+            type: 'line',
             data: {
                 labels: dates.map(date => new Date(date).toLocaleDateString()),
                 datasets: [
                     {
                         label: 'Total Clones',
                         data: clones,
-                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
                         borderColor: '#3b82f6',
-                        borderWidth: 1
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
                     },
                     {
                         label: 'Unique Cloners',
                         data: uniqueCloners,
-                        backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
                         borderColor: '#10b981',
-                        borderWidth: 1
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
                     }
                 ]
             },
@@ -322,6 +348,9 @@ class GitHubAnalyticsDashboard {
     createMonthlyChart() {
         const ctx = document.getElementById('monthly-chart').getContext('2d');
 
+        // Get selected metric (default to views)
+        const selectedMetric = this.selectedMetric || 'views';
+        
         // Group data by month
         const monthlyData = {};
         Object.entries(this.data.daily).forEach(([date, data]) => {
@@ -336,7 +365,25 @@ class GitHubAnalyticsDashboard {
         });
 
         const months = Object.keys(monthlyData).sort();
-        const monthlyViews = months.map(month => monthlyData[month].views);
+        
+        // Get data based on selected metric
+        let chartData, label, color;
+        switch(selectedMetric) {
+            case 'visitors':
+                chartData = months.map(month => monthlyData[month].unique_visitors);
+                label = 'Monthly Unique Visitors';
+                color = '#10b981';
+                break;
+            case 'clones':
+                chartData = months.map(month => monthlyData[month].clones);
+                label = 'Monthly Clones';
+                color = '#3b82f6';
+                break;
+            default: // views
+                chartData = months.map(month => monthlyData[month].views);
+                label = 'Monthly Views';
+                color = '#f59e0b';
+        }
 
         if (this.charts.monthly) {
             this.charts.monthly.destroy();
@@ -347,10 +394,10 @@ class GitHubAnalyticsDashboard {
             data: {
                 labels: months.map(month => new Date(month + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'short' })),
                 datasets: [{
-                    label: 'Monthly Views',
-                    data: monthlyViews,
-                    backgroundColor: 'rgba(245, 158, 11, 0.8)',
-                    borderColor: '#f59e0b',
+                    label: label,
+                    data: chartData,
+                    backgroundColor: color + '80', // Add transparency
+                    borderColor: color,
                     borderWidth: 1
                 }]
             },
@@ -380,8 +427,18 @@ class GitHubAnalyticsDashboard {
     }
 
     updateReferrersList() {
+        const referrersCard = document.getElementById('referrers-card');
         const referrersList = document.getElementById('referrers-list');
         const referrers = this.data.referrers;
+
+        // Hide card if no referrers data
+        if (!referrers || Object.keys(referrers).length === 0) {
+            if (referrersCard) referrersCard.style.display = 'none';
+            return;
+        }
+
+        // Show card if we have referrers data
+        if (referrersCard) referrersCard.style.display = 'block';
         const maxCount = Math.max(...Object.values(referrers));
 
         referrersList.innerHTML = '';
@@ -471,6 +528,9 @@ class GitHubAnalyticsDashboard {
     async loadRealData() {
         // Load data for the default repository (bedrock)
         await this.loadRealDataForRepo('nikhil-sehgal', 'bedrock');
+        // Set the default selection in dropdown
+        document.getElementById('repo-selector').value = 'nikhil-sehgal/bedrock';
+        this.currentRepo = 'nikhil-sehgal/bedrock';
         this.renderDashboard();
     }
 
@@ -482,29 +542,95 @@ class GitHubAnalyticsDashboard {
 
             if (dailyData && Object.keys(dailyData).length > 0) {
                 this.data.daily = this.convertDailyData(dailyData);
-                // Add this line to calculate summary stats from real data
                 this.data.summary = this.calculateSummaryStats();
-            } else {
-                console.log('No real data found, using sample data');
-                this.loadSampleData();
-                return;
-            }
-
-            // Try to load referrers data (optional)
-            try {
-                const referrersData = await this.dataLoader.loadReferrersData(owner, name);
-                if (referrersData) {
-                    this.data.referrers = referrersData;
+                
+                // Try to load referrers data (optional)
+                try {
+                    const referrersData = await this.dataLoader.loadReferrersData(owner, name);
+                    if (referrersData) {
+                        this.data.referrers = referrersData;
+                    } else {
+                        this.data.referrers = {};
+                    }
+                } catch (error) {
+                    console.log('No referrers data found');
+                    this.data.referrers = {};
                 }
-            } catch (error) {
-                console.log('No referrers data found, using empty data');
+
+                // Load repository metadata (stars, forks)
+                try {
+                    const metadataData = await this.dataLoader.loadRepositoryMetadata(owner, name);
+                    if (metadataData) {
+                        this.data.metadata = metadataData;
+                    } else {
+                        this.data.metadata = {};
+                    }
+                } catch (error) {
+                    console.log('No repository metadata found');
+                    this.data.metadata = {};
+                }
+            } else {
+                console.log(`No data found for ${owner}/${name}`);
+                // Clear data instead of loading sample data
+                this.data.daily = {};
                 this.data.referrers = {};
+                this.data.summary = {};
+                this.data.metadata = {};
             }
 
         } catch (error) {
-            console.error('Error loading real data:', error);
-            console.log('Falling back to sample data');
-            this.loadSampleData();
+            console.error('Error loading data:', error);
+            // Clear data instead of loading sample data
+            this.data.daily = {};
+            this.data.referrers = {};
+            this.data.summary = {};
+            this.data.metadata = {};
+        }
+    }
+
+    async loadPortfolioOverview() {
+        try {
+            const repos = ['nikhil-sehgal/bedrock', 'nikhil-sehgal/Chrome-Tab-Changer'];
+            let totalViews = 0, totalVisitors = 0, totalClones = 0, totalStars = 0;
+            
+            for (const repo of repos) {
+                const [owner, name] = repo.split('/');
+                
+                // Load daily data
+                const currentYear = new Date().getFullYear();
+                const dailyData = await this.dataLoader.loadDailyData(owner, name, currentYear);
+                
+                if (dailyData && Object.keys(dailyData).length > 0) {
+                    const convertedDaily = this.convertDailyData(dailyData);
+                    const dailyValues = Object.values(convertedDaily);
+                    
+                    totalViews += dailyValues.reduce((sum, day) => sum + day.views, 0);
+                    totalVisitors += dailyValues.reduce((sum, day) => sum + day.unique_visitors, 0);
+                    totalClones += dailyValues.reduce((sum, day) => sum + day.clones, 0);
+                }
+                
+                // Load repository metadata for stars
+                try {
+                    const metadataData = await this.dataLoader.loadRepositoryMetadata(owner, name);
+                    if (metadataData && Object.keys(metadataData).length > 0) {
+                        const dates = Object.keys(metadataData).sort().reverse();
+                        const latestData = metadataData[dates[0]] || {};
+                        totalStars += latestData.stars || 0;
+                    }
+                } catch (error) {
+                    console.log(`No metadata for ${repo}`);
+                }
+            }
+            
+            // Update portfolio overview display
+            document.getElementById('total-portfolio-views').textContent = totalViews.toLocaleString();
+            document.getElementById('total-portfolio-visitors').textContent = totalVisitors.toLocaleString();
+            document.getElementById('total-portfolio-clones').textContent = totalClones.toLocaleString();
+            document.getElementById('total-portfolio-stars').textContent = totalStars.toLocaleString();
+            document.getElementById('total-repos').textContent = repos.length;
+            
+        } catch (error) {
+            console.error('Error loading portfolio overview:', error);
         }
     }
 
@@ -565,31 +691,44 @@ class GitHubDataLoader {
     }
 
     async loadDailyData(repoOwner, repoName, year) {
-        // Use the correct owner/repo path
-        //const url = `${this.baseUrl}/${this.dataRepoOwner}/${this.dataRepoName}/main/${repoOwner}/${repoName}/daily_metrics.json`;
-        const url = 'https://raw.githubusercontent.com/nikhil-sehgal/nikhil-sehgal-repos-data-collector/main/nikhil-sehgal/bedrock/daily_metrics.json'
+        const url = `${this.baseUrl}/${this.dataRepoOwner}/${this.dataRepoName}/main/${repoOwner}/${repoName}/daily_metrics.json`;
         const response = await fetch(url);
         if (!response.ok) 
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         
-        // After fetching and parsing:
         const data = await response.json();
         console.log('Fetched daily data:', data);
 
         return data;
     }
 
-    // async loadReferrersData(repoOwner, repoName) {
-    //     try {
-    //         const url = `${this.baseUrl}/${this.dataRepoOwner}/${this.dataRepoName}/main/${repoOwner}/${repoName}/referrers.json`;
-    //         const response = await fetch(url);
-    //         if (!response.ok) {
-    //             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    //         }
-    //         return await response.json();
-    //     } catch (error) {
-    //         console.error('Error loading referrers data:', error);
-    //         return {};
-    //     }
-    // }
+    async loadReferrersData(repoOwner, repoName) {
+        try {
+            const url = `${this.baseUrl}/${this.dataRepoOwner}/${this.dataRepoName}/main/${repoOwner}/${repoName}/referrers.json`;
+            const response = await fetch(url);
+            if (!response.ok) {
+                console.log(`No referrers data found for ${repoOwner}/${repoName}`);
+                return {};
+            }
+            return await response.json();
+        } catch (error) {
+            console.log('No referrers data available:', error.message);
+            return {};
+        }
+    }
+
+    async loadRepositoryMetadata(repoOwner, repoName) {
+        try {
+            const url = `${this.baseUrl}/${this.dataRepoOwner}/${this.dataRepoName}/main/${repoOwner}/${repoName}/repository_metadata.json`;
+            const response = await fetch(url);
+            if (!response.ok) {
+                console.log(`No repository metadata found for ${repoOwner}/${repoName}`);
+                return {};
+            }
+            return await response.json();
+        } catch (error) {
+            console.log('No repository metadata available:', error.message);
+            return {};
+        }
+    }
 }

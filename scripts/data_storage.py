@@ -79,6 +79,37 @@ class AnalyticsDataStorage:
             self.logger.error(f"Error storing daily metrics: {e}")
             return False    
 
+    def store_repository_metadata(self, owner: str, repo: str, metadata: Dict[str, int]) -> bool:
+        """Store repository metadata (stars, forks, etc.)."""
+        try:
+            current_date = datetime.now(timezone.utc)
+            date_key = format_date_for_data_key(current_date)
+            
+            # Load existing metadata
+            metadata_data = self.file_manager.load_repository_metadata(owner, repo)
+            
+            # Add timestamp to metadata
+            timestamped_metadata = metadata.copy()
+            timestamped_metadata['timestamp'] = get_current_utc_timestamp()
+            
+            # Store by date
+            metadata_data[date_key] = timestamped_metadata
+            
+            # Save updated data
+            success = self.file_manager.save_repository_metadata(owner, repo, metadata_data)
+            
+            if success:
+                self.logger.info(f"Stored repository metadata for {owner}/{repo}: "
+                               f"{metadata['stars']} stars, {metadata['forks']} forks")
+            else:
+                self.logger.error(f"Failed to store repository metadata for {owner}/{repo}")
+            
+            return success
+            
+        except Exception as e:
+            self.logger.error(f"Error storing repository metadata: {e}")
+            return False
+
     def store_referrers_data(self, owner: str, repo: str, referrers: Dict[str, int], 
                            month: Optional[str] = None) -> bool:
         """Store referrers data for a repository."""
@@ -240,12 +271,17 @@ class AnalyticsDataStorage:
         """Store historical data from GitHub API (initial 14-day data)."""
         try:
             success_count = 0
+            current_date = datetime.now(timezone.utc).date()
             
-            # Process views data
+            # Process views data (skip current day to avoid overwriting)
             for day_data in views_daily:
                 timestamp = day_data.get('timestamp', '')
                 if timestamp:
                     date = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                    # Skip current day to avoid overwriting current data
+                    if date.date() == current_date:
+                        continue
+                        
                     success = self.store_daily_metrics(
                         owner, repo, date,
                         views=day_data.get('count', 0),
@@ -256,11 +292,15 @@ class AnalyticsDataStorage:
                     if success:
                         success_count += 1
             
-            # Process clones data and update existing entries
+            # Process clones data and update existing entries (skip current day)
             for day_data in clones_daily:
                 timestamp = day_data.get('timestamp', '')
                 if timestamp:
                     date = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                    # Skip current day to avoid overwriting current data
+                    if date.date() == current_date:
+                        continue
+                        
                     year = date.year
                     date_key = format_date_for_data_key(date)
                     

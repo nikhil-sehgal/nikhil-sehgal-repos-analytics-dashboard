@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub Analytics Dashboard</title>
+    <title>GitHub Insights</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,22 +16,41 @@
         <header class="header">
             <div class="header-content">
                 <div class="logo">
-                    <h1>📊 GitHub Analytics</h1>
-                    <p>Long-term repository insights beyond 14 days</p>
+                    <h1>📊 GitHub Insights</h1>
+                    <p>App showing the github insight for Nikhil's repo</p>
                 </div>
+                
                 <div class="header-actions">
                     <select id="repo-selector" class="repo-selector">
                         <option value="">Select Repository</option>
                         <option value="nikhil-sehgal/bedrock">nikhil-sehgal/bedrock</option>
+                        <option value="nikhil-sehgal/Chrome-Tab-Changer">nikhil-sehgal/Chrome-Tab-Changer</option>
                     </select>
-                    <div class="date-range">
-                        <input type="date" id="start-date" class="date-input">
-                        <span>to</span>
-                        <input type="date" id="end-date" class="date-input">
-                    </div>
                 </div>
             </div>
         </header>
+
+        <!-- Portfolio Overview -->
+        <div class="portfolio-overview" id="portfolio-overview">
+            <div class="portfolio-stats">
+                <span class="portfolio-stat">
+                    <strong id="total-portfolio-views">-</strong> total views
+                </span>
+                <span class="portfolio-divider">|</span>
+                <span class="portfolio-stat">
+                    <strong id="total-portfolio-visitors">-</strong> visitors
+                </span>
+                <span class="portfolio-divider">|</span>
+                <span class="portfolio-stat">
+                    <strong id="total-portfolio-clones">-</strong> clones
+                </span>
+                <span class="portfolio-divider">|</span>
+                <span class="portfolio-stat">
+                    <strong id="total-portfolio-stars">-</strong> stars
+                </span>
+                <span class="portfolio-text">across <strong id="total-repos">-</strong> repos</span>
+            </div>
+        </div>
 
         <!-- Loading State -->
         <div id="loading" class="loading">
@@ -86,6 +105,24 @@
                             <h3>Unique Cloners</h3>
                             <div class="card-value" id="total-unique-cloners">-</div>
                             <div class="card-change positive" id="unique-cloners-change">+15% this month</div>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-card">
+                        <div class="card-icon">⭐</div>
+                        <div class="card-content">
+                            <h3>Stars</h3>
+                            <div class="card-value" id="total-stars">-</div>
+                            <div class="card-change" id="stars-change">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-card">
+                        <div class="card-icon">🍴</div>
+                        <div class="card-content">
+                            <h3>Forks</h3>
+                            <div class="card-value" id="total-forks">-</div>
+                            <div class="card-change" id="forks-change">-</div>
                         </div>
                     </div>
                 </div>
@@ -146,7 +183,7 @@
                     </div>
 
                     <!-- Top Referrers -->
-                    <div class="chart-card">
+                    <div class="chart-card" id="referrers-card" style="display: none;">
                         <div class="chart-header">
                             <h3>🔗 Top Traffic Sources</h3>
                             <div class="time-selector">

@@ -72,6 +72,13 @@ class DataCollectionOrchestrator:
             except GitHubAPIError as e:
                 self.logger.warning(f"Failed to collect referrers for {owner}/{repo_name}: {e}")
             
+            # Collect repository metadata (stars, forks, etc.)
+            try:
+                metadata = self.collector.collect_repository_metadata(owner, repo_name)
+                self.storage.store_repository_metadata(owner, repo_name, metadata)
+            except GitHubAPIError as e:
+                self.logger.warning(f"Failed to collect repository metadata for {owner}/{repo_name}: {e}")
+            
             # Collect historical data if requested (for new repositories)
             if include_historical:
                 try:
