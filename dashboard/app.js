@@ -661,6 +661,8 @@ class GitHubAnalyticsDashboard {
             // Use provided repos or fallback to hardcoded list
             const repoList = repos || ['nikhil-sehgal/bedrock', 'nikhil-sehgal/Chrome-Tab-Changer'];
             let totalViews = 0, totalVisitors = 0, totalClones = 0, totalStars = 0;
+            let earliestDate = null;
+            let latestDate = null;
             
             for (const repo of repoList) {
                 const [owner, name] = repo.split('/');
@@ -672,6 +674,20 @@ class GitHubAnalyticsDashboard {
                 if (dailyData && Object.keys(dailyData).length > 0) {
                     const convertedDaily = this.convertDailyData(dailyData);
                     const dailyValues = Object.values(convertedDaily);
+                    const dates = Object.keys(convertedDaily).sort();
+                    
+                    // Track date range
+                    if (dates.length > 0) {
+                        const repoEarliest = dates[0];
+                        const repoLatest = dates[dates.length - 1];
+                        
+                        if (!earliestDate || repoEarliest < earliestDate) {
+                            earliestDate = repoEarliest;
+                        }
+                        if (!latestDate || repoLatest > latestDate) {
+                            latestDate = repoLatest;
+                        }
+                    }
                     
                     totalViews += dailyValues.reduce((sum, day) => sum + day.views, 0);
                     totalVisitors += dailyValues.reduce((sum, day) => sum + day.unique_visitors, 0);
@@ -698,7 +714,16 @@ class GitHubAnalyticsDashboard {
             document.getElementById('total-portfolio-stars').textContent = totalStars.toLocaleString();
             document.getElementById('total-repos').textContent = repoList.length;
             
+            // Update date range if elements exist
+            const dateRangeElement = document.getElementById('data-date-range');
+            if (dateRangeElement && earliestDate && latestDate) {
+                const startDate = new Date(earliestDate).toLocaleDateString();
+                const endDate = new Date(latestDate).toLocaleDateString();
+                dateRangeElement.textContent = `(${startDate} - ${endDate})`;
+            }
+            
             console.log(`Portfolio overview loaded for ${repoList.length} repositories`);
+            console.log(`Data range: ${earliestDate} to ${latestDate}`);
             
         } catch (error) {
             console.error('Error loading portfolio overview:', error);
