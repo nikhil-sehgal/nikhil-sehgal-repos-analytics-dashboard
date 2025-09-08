@@ -590,23 +590,21 @@ class GitHubAnalyticsDashboard {
 
     async loadAvailableRepositories() {
         try {
-            // Complete list of repositories to check for data
-            const allReposToCheck = [
-                'nikhil-sehgal/bedrock',
+            console.log('Checking available repositories...');
+            
+            // Hardcoded list of all your repositories
+            const allRepos = [
                 'nikhil-sehgal/Chrome-Tab-Changer',
-                'nikhil-sehgal/github-traffic-insights',
-                'nikhil-sehgal/nikhil-sehgal-repos-analytics-dashboard',
-                'nikhil-sehgal/repos-analytics-dashboard',
-                'nikhil-sehgal/analytics-dashboard',
-                'nikhil-sehgal/traffic-insights',
-                'nikhil-sehgal/repo-analytics'
+                'nikhil-sehgal/DataStructures', 
+                'nikhil-sehgal/EmployeeDemo',
+                'nikhil-sehgal/bedrock',
+                'nikhil-sehgal/stocks-app',
+                'nikhil-sehgal/youtube-controller'
             ];
             
             const availableRepos = [];
             
-            console.log('Checking for available repositories...');
-            
-            for (const repo of allReposToCheck) {
+            for (const repo of allRepos) {
                 const [owner, name] = repo.split('/');
                 try {
                     // Check if repo has data by trying to load daily metrics
@@ -633,7 +631,7 @@ class GitHubAnalyticsDashboard {
             
         } catch (error) {
             console.error('Error loading available repositories:', error);
-            // Fallback to hardcoded repos
+            // Fallback to basic repos
             const fallbackRepos = ['nikhil-sehgal/bedrock', 'nikhil-sehgal/Chrome-Tab-Changer'];
             this.updateRepositorySelector(fallbackRepos);
             this.loadPortfolioOverview(fallbackRepos);
