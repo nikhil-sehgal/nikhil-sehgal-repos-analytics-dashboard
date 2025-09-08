@@ -429,21 +429,37 @@ class GitHubAnalyticsDashboard {
     updateReferrersList() {
         const referrersCard = document.getElementById('referrers-card');
         const referrersList = document.getElementById('referrers-list');
-        const referrers = this.data.referrers;
+        const referrersData = this.data.referrers;
 
         // Hide card if no referrers data
-        if (!referrers || Object.keys(referrers).length === 0) {
+        if (!referrersData || Object.keys(referrersData).length === 0) {
+            if (referrersCard) referrersCard.style.display = 'none';
+            return;
+        }
+
+        // Flatten the referrers data (sum across all months)
+        const flattenedReferrers = {};
+        Object.values(referrersData).forEach(monthData => {
+            if (typeof monthData === 'object') {
+                Object.entries(monthData).forEach(([referrer, count]) => {
+                    flattenedReferrers[referrer] = (flattenedReferrers[referrer] || 0) + count;
+                });
+            }
+        });
+
+        // Hide card if no flattened referrers
+        if (Object.keys(flattenedReferrers).length === 0) {
             if (referrersCard) referrersCard.style.display = 'none';
             return;
         }
 
         // Show card if we have referrers data
         if (referrersCard) referrersCard.style.display = 'block';
-        const maxCount = Math.max(...Object.values(referrers));
+        const maxCount = Math.max(...Object.values(flattenedReferrers));
 
         referrersList.innerHTML = '';
 
-        Object.entries(referrers)
+        Object.entries(flattenedReferrers)
             .sort(([, a], [, b]) => b - a)
             .slice(0, 6)
             .forEach(([referrer, count]) => {
