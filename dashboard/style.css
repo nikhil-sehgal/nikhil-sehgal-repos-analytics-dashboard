@@ -81,6 +81,48 @@ body {
   font-size: 0.95rem;
 }
 
+/* Portfolio Overview */
+.portfolio-overview {
+    margin: 1rem 0;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.portfolio-stats {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+    color: #e5e7eb;
+    flex-wrap: wrap;
+}
+
+.portfolio-stat strong {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.portfolio-divider {
+    color: #6b7280;
+}
+
+.portfolio-text {
+    color: #d1d5db;
+}
+
+.portfolio-text strong {
+    color: #ffffff;
+}
+
+@media (max-width: 768px) {
+    .portfolio-stats {
+        font-size: 0.8rem;
+        gap: 0.5rem;
+    }
+}
+
 .header-actions {
   display: flex;
   align-items: center;
