@@ -653,6 +653,16 @@ class GitHubAnalyticsDashboard {
             selector.appendChild(option);
         });
         
+        // Auto-select bedrock if it exists in the list
+        const bedrockRepo = 'nikhil-sehgal/bedrock';
+        if (repos.includes(bedrockRepo)) {
+            selector.value = bedrockRepo;
+            this.currentRepo = bedrockRepo;
+            // Load data for bedrock
+            const [owner, name] = bedrockRepo.split('/');
+            this.loadRealDataForRepo(owner, name);
+        }
+        
         console.log(`Updated repository selector with ${repos.length} repositories:`, repos);
     }
 
