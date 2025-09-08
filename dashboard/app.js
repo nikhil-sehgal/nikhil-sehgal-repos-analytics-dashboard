@@ -669,7 +669,6 @@ class GitHubAnalyticsDashboard {
     }
 
     async loadPortfolioOverview(repos = null) {
-    async loadPortfolioOverview(repos = null) {
         try {
             // Use provided repos or fallback to hardcoded list
             const repoList = repos || ['nikhil-sehgal/bedrock', 'nikhil-sehgal/Chrome-Tab-Changer'];
@@ -716,7 +715,6 @@ class GitHubAnalyticsDashboard {
         } catch (error) {
             console.error('Error loading portfolio overview:', error);
         }
-    }
     }
 
     convertDailyData(dailyData) {
