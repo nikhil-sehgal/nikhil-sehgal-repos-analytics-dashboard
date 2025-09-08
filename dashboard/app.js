@@ -73,6 +73,15 @@ class GitHubAnalyticsDashboard {
         document.querySelector('.export-btn').addEventListener('click', () => {
             this.exportToCSV();
         });
+
+        // Monthly chart metric selector
+        const metricSelector = document.querySelector('.metric-selector');
+        if (metricSelector) {
+            metricSelector.addEventListener('change', (e) => {
+                this.selectedMetric = e.target.value;
+                this.createMonthlyChart();
+            });
+        }
     }
 
     setDefaultDateRange() {
@@ -363,6 +372,9 @@ class GitHubAnalyticsDashboard {
     createMonthlyChart() {
         const ctx = document.getElementById('monthly-chart').getContext('2d');
 
+        // Get selected metric (default to views)
+        const selectedMetric = this.selectedMetric || 'views';
+        
         // Group data by month
         const monthlyData = {};
         Object.entries(this.data.daily).forEach(([date, data]) => {
@@ -377,7 +389,25 @@ class GitHubAnalyticsDashboard {
         });
 
         const months = Object.keys(monthlyData).sort();
-        const monthlyViews = months.map(month => monthlyData[month].views);
+        
+        // Get data based on selected metric
+        let chartData, label, color;
+        switch(selectedMetric) {
+            case 'visitors':
+                chartData = months.map(month => monthlyData[month].unique_visitors);
+                label = 'Monthly Unique Visitors';
+                color = '#10b981';
+                break;
+            case 'clones':
+                chartData = months.map(month => monthlyData[month].clones);
+                label = 'Monthly Clones';
+                color = '#3b82f6';
+                break;
+            default: // views
+                chartData = months.map(month => monthlyData[month].views);
+                label = 'Monthly Views';
+                color = '#f59e0b';
+        }
 
         if (this.charts.monthly) {
             this.charts.monthly.destroy();
@@ -388,10 +418,10 @@ class GitHubAnalyticsDashboard {
             data: {
                 labels: months.map(month => new Date(month + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'short' })),
                 datasets: [{
-                    label: 'Monthly Views',
-                    data: monthlyViews,
-                    backgroundColor: 'rgba(245, 158, 11, 0.8)',
-                    borderColor: '#f59e0b',
+                    label: label,
+                    data: chartData,
+                    backgroundColor: color + '80', // Add transparency
+                    borderColor: color,
                     borderWidth: 1
                 }]
             },
