@@ -43,20 +43,6 @@ class GitHubAnalyticsDashboard {
             }
         });
 
-        // Date range inputs
-        const startDate = document.getElementById('start-date');
-        const endDate = document.getElementById('end-date');
-
-        startDate.addEventListener('change', (e) => {
-            this.dateRange.start = e.target.value;
-            this.updateCharts();
-        });
-
-        endDate.addEventListener('change', (e) => {
-            this.dateRange.end = e.target.value;
-            this.updateCharts();
-        });
-
         // Period buttons
         document.querySelectorAll('.period-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
