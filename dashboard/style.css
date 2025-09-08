@@ -119,6 +119,12 @@ body {
     color: #1e293b;
 }
 
+.portfolio-date-range {
+    color: #64748b;
+    font-size: 0.9em;
+    font-style: italic;
+}
+
 @media (max-width: 768px) {
     .portfolio-overview {
         margin: 0.5rem;
