@@ -590,17 +590,23 @@ class GitHubAnalyticsDashboard {
 
     async loadAvailableRepositories() {
         try {
-            // Try to load a list of known repositories from your data
-            // We'll check for common repo patterns or use a predefined list
-            const knownRepos = [
+            // Complete list of repositories to check for data
+            const allReposToCheck = [
                 'nikhil-sehgal/bedrock',
-                'nikhil-sehgal/Chrome-Tab-Changer'
+                'nikhil-sehgal/Chrome-Tab-Changer',
+                'nikhil-sehgal/github-traffic-insights',
+                'nikhil-sehgal/nikhil-sehgal-repos-analytics-dashboard',
+                'nikhil-sehgal/repos-analytics-dashboard',
+                'nikhil-sehgal/analytics-dashboard',
+                'nikhil-sehgal/traffic-insights',
+                'nikhil-sehgal/repo-analytics'
             ];
             
-            // Try to discover additional repos by checking for data files
             const availableRepos = [];
             
-            for (const repo of knownRepos) {
+            console.log('Checking for available repositories...');
+            
+            for (const repo of allReposToCheck) {
                 const [owner, name] = repo.split('/');
                 try {
                     // Check if repo has data by trying to load daily metrics
@@ -608,32 +614,16 @@ class GitHubAnalyticsDashboard {
                     const dailyData = await this.dataLoader.loadDailyData(owner, name, currentYear);
                     if (dailyData && Object.keys(dailyData).length > 0) {
                         availableRepos.push(repo);
+                        console.log(`✓ Found data for: ${repo}`);
+                    } else {
+                        console.log(`✗ No data for: ${repo}`);
                     }
                 } catch (error) {
-                    console.log(`No data found for ${repo}`);
+                    console.log(`✗ No data for: ${repo} (${error.message})`);
                 }
             }
             
-            // Add any additional repos you want to check
-            const additionalRepos = [
-                'nikhil-sehgal/github-traffic-insights', // Add your new repo here
-                'nikhil-sehgal/another-repo' // Add more as needed
-            ];
-            
-            for (const repo of additionalRepos) {
-                if (!availableRepos.includes(repo)) {
-                    const [owner, name] = repo.split('/');
-                    try {
-                        const currentYear = new Date().getFullYear();
-                        const dailyData = await this.dataLoader.loadDailyData(owner, name, currentYear);
-                        if (dailyData && Object.keys(dailyData).length > 0) {
-                            availableRepos.push(repo);
-                        }
-                    } catch (error) {
-                        console.log(`No data found for ${repo}`);
-                    }
-                }
-            }
+            console.log(`Found ${availableRepos.length} repositories with data:`, availableRepos);
             
             // Update repository selector
             this.updateRepositorySelector(availableRepos);
