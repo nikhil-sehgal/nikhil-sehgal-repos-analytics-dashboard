@@ -311,23 +311,27 @@ class GitHubAnalyticsDashboard {
         }
 
         this.charts.clones = new Chart(ctx, {
-            type: 'bar',
+            type: 'line',
             data: {
                 labels: dates.map(date => new Date(date).toLocaleDateString()),
                 datasets: [
                     {
                         label: 'Total Clones',
                         data: clones,
-                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
                         borderColor: '#3b82f6',
-                        borderWidth: 1
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
                     },
                     {
                         label: 'Unique Cloners',
                         data: uniqueCloners,
-                        backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
                         borderColor: '#10b981',
-                        borderWidth: 1
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
                     }
                 ]
             },
@@ -417,8 +421,18 @@ class GitHubAnalyticsDashboard {
     }
 
     updateReferrersList() {
+        const referrersCard = document.getElementById('referrers-card');
         const referrersList = document.getElementById('referrers-list');
         const referrers = this.data.referrers;
+
+        // Hide card if no referrers data
+        if (!referrers || Object.keys(referrers).length === 0) {
+            if (referrersCard) referrersCard.style.display = 'none';
+            return;
+        }
+
+        // Show card if we have referrers data
+        if (referrersCard) referrersCard.style.display = 'block';
         const maxCount = Math.max(...Object.values(referrers));
 
         referrersList.innerHTML = '';
