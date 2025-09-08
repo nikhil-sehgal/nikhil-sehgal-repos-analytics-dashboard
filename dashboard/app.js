@@ -200,25 +200,30 @@ class GitHubAnalyticsDashboard {
         const dates = Object.keys(metadata).sort().reverse();
         const latestData = dates.length > 0 ? metadata[dates[0]] : {};
         
-        // Update stars and forks
-        document.getElementById('total-stars').textContent = (latestData.stars ?? 0).toLocaleString();
-        document.getElementById('total-forks').textContent = (latestData.forks ?? 0).toLocaleString();
+        // Update stars and forks (with null checks)
+        const starsElement = document.getElementById('total-stars');
+        const forksElement = document.getElementById('total-forks');
+        const starsChangeElement = document.getElementById('stars-change');
+        const forksChangeElement = document.getElementById('forks-change');
+        
+        if (starsElement) starsElement.textContent = (latestData.stars ?? 0).toLocaleString();
+        if (forksElement) forksElement.textContent = (latestData.forks ?? 0).toLocaleString();
         
         // Calculate changes if we have multiple data points
-        if (dates.length >= 2) {
+        if (dates.length >= 2 && starsChangeElement && forksChangeElement) {
             const previousData = metadata[dates[1]];
             const starsChange = (latestData.stars ?? 0) - (previousData.stars ?? 0);
             const forksChange = (latestData.forks ?? 0) - (previousData.forks ?? 0);
             
-            document.getElementById('stars-change').textContent = starsChange >= 0 ? `+${starsChange}` : `${starsChange}`;
-            document.getElementById('forks-change').textContent = forksChange >= 0 ? `+${forksChange}` : `${forksChange}`;
+            starsChangeElement.textContent = starsChange >= 0 ? `+${starsChange}` : `${starsChange}`;
+            forksChangeElement.textContent = forksChange >= 0 ? `+${forksChange}` : `${forksChange}`;
             
             // Add appropriate CSS classes
-            document.getElementById('stars-change').className = `card-change ${starsChange > 0 ? 'positive' : starsChange < 0 ? 'negative' : 'neutral'}`;
-            document.getElementById('forks-change').className = `card-change ${forksChange > 0 ? 'positive' : forksChange < 0 ? 'negative' : 'neutral'}`;
+            starsChangeElement.className = `card-change ${starsChange > 0 ? 'positive' : starsChange < 0 ? 'negative' : 'neutral'}`;
+            forksChangeElement.className = `card-change ${forksChange > 0 ? 'positive' : forksChange < 0 ? 'negative' : 'neutral'}`;
         } else {
-            document.getElementById('stars-change').textContent = '-';
-            document.getElementById('forks-change').textContent = '-';
+            if (starsChangeElement) starsChangeElement.textContent = '-';
+            if (forksChangeElement) forksChangeElement.textContent = '-';
         }
     }
 
@@ -636,11 +641,12 @@ class GitHubDataLoader {
             const url = `${this.baseUrl}/${this.dataRepoOwner}/${this.dataRepoName}/main/${repoOwner}/${repoName}/referrers.json`;
             const response = await fetch(url);
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                console.log(`No referrers data found for ${repoOwner}/${repoName}`);
+                return {};
             }
             return await response.json();
         } catch (error) {
-            console.error('Error loading referrers data:', error);
+            console.log('No referrers data available:', error.message);
             return {};
         }
     }
@@ -650,11 +656,12 @@ class GitHubDataLoader {
             const url = `${this.baseUrl}/${this.dataRepoOwner}/${this.dataRepoName}/main/${repoOwner}/${repoName}/repository_metadata.json`;
             const response = await fetch(url);
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                console.log(`No repository metadata found for ${repoOwner}/${repoName}`);
+                return {};
             }
             return await response.json();
         } catch (error) {
-            console.error('Error loading repository metadata:', error);
+            console.log('No repository metadata available:', error.message);
             return {};
         }
     }
