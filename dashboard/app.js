@@ -19,7 +19,6 @@ class GitHubAnalyticsDashboard {
 
     init() {
         this.setupEventListeners();
-        this.setDefaultDateRange();
         this.showLoading();
 
         // Initialize data loader for real data
@@ -68,18 +67,6 @@ class GitHubAnalyticsDashboard {
                 this.createMonthlyChart();
             });
         }
-    }
-
-    setDefaultDateRange() {
-        const endDate = new Date();
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - 30);
-
-        document.getElementById('start-date').value = startDate.toISOString().split('T')[0];
-        document.getElementById('end-date').value = endDate.toISOString().split('T')[0];
-
-        this.dateRange.start = startDate.toISOString().split('T')[0];
-        this.dateRange.end = endDate.toISOString().split('T')[0];
     }
 
     setDateRangeFromPeriod(days) {
