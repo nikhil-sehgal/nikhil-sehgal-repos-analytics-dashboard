@@ -271,47 +271,56 @@ class AnalyticsDataStorage:
         """Store historical data from GitHub API (initial 14-day data)."""
         try:
             success_count = 0
-            current_date = datetime.now(timezone.utc).date()
             
-            # Process views data (skip current day to avoid overwriting)
+            # Process views data - store all historical data
             for day_data in views_daily:
                 timestamp = day_data.get('timestamp', '')
                 if timestamp:
                     date = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
-                    # Skip current day to avoid overwriting current data
-                    if date.date() == current_date:
-                        continue
-                        
-                    success = self.store_daily_metrics(
-                        owner, repo, date,
-                        views=day_data.get('count', 0),
-                        unique_visitors=day_data.get('uniques', 0),
-                        clones=0,  # Will be updated from clones data
-                        unique_cloners=0
-                    )
-                    if success:
-                        success_count += 1
+                    
+                    # Check if data already exists for this date
+                    year = date.year
+                    date_key = format_date_for_data_key(date)
+                    daily_data = self.file_manager.load_daily_data(owner, repo, year)
+                    
+                    # Only store if data doesn't exist for this date
+                    if date_key not in daily_data:
+                        success = self.store_daily_metrics(
+                            owner, repo, date,
+                            views=day_data.get('count', 0),
+                            unique_visitors=day_data.get('uniques', 0),
+                            clones=0,  # Will be updated from clones data
+                            unique_cloners=0
+                        )
+                        if success:
+                            success_count += 1
             
-            # Process clones data and update existing entries (skip current day)
+            # Process clones data and update existing entries
             for day_data in clones_daily:
                 timestamp = day_data.get('timestamp', '')
                 if timestamp:
                     date = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
-                    # Skip current day to avoid overwriting current data
-                    if date.date() == current_date:
-                        continue
-                        
                     year = date.year
                     date_key = format_date_for_data_key(date)
                     
                     # Load existing data
                     daily_data = self.file_manager.load_daily_data(owner, repo, year)
                     
-                    # Update clones data if entry exists
+                    # Update clones data if entry exists, or create new entry
                     if date_key in daily_data:
                         daily_data[date_key]['clones'] = day_data.get('count', 0)
                         daily_data[date_key]['unique_cloners'] = day_data.get('uniques', 0)
-                        self.file_manager.save_daily_data(owner, repo, year, daily_data)
+                    else:
+                        daily_data[date_key] = {
+                            'views': 0,
+                            'unique_visitors': 0,
+                            'clones': day_data.get('count', 0),
+                            'unique_cloners': day_data.get('uniques', 0),
+                            'timestamp': get_current_utc_timestamp()
+                        }
+                        success_count += 1
+                    
+                    self.file_manager.save_daily_data(owner, repo, year, daily_data)
             
             self.logger.info(f"Stored {success_count} days of historical data for {owner}/{repo}")
             return success_count > 0
