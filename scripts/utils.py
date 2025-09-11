@@ -314,8 +314,11 @@ class DataFileManager:
         # Load existing data
         existing_data = safe_json_load(daily_metrics_path)
         
-        # Update data for the specific year
-        existing_data[str(year)] = data
+        # Merge with existing year data instead of replacing
+        if str(year) not in existing_data:
+            existing_data[str(year)] = {}
+        
+        existing_data[str(year)].update(data)
         
         # Save updated data
         return safe_json_save(existing_data, daily_metrics_path)
