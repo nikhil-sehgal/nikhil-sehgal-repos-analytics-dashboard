@@ -290,41 +290,8 @@ class GitHubDataCollector:
             raise
     
     def _fill_missing_days(self, daily_data: List[Dict]) -> List[Dict]:
-        """Fill missing days with zero values for complete 14-day dataset."""
-        from datetime import datetime, timedelta, timezone
-        
-        # Create a set of dates that have data
-        existing_dates = set()
-        data_by_date = {}
-        
-        for day in daily_data:
-            timestamp = day.get('timestamp', '')
-            if timestamp:
-                date = datetime.fromisoformat(timestamp.replace('Z', '+00:00')).date()
-                existing_dates.add(date)
-                data_by_date[date] = day
-        
-        # Generate complete 14-day range ending today
-        end_date = datetime.now(timezone.utc).date()
-        start_date = end_date - timedelta(days=13)  # 14 days total including today
-        
-        complete_data = []
-        current_date = start_date
-        
-        while current_date <= end_date:
-            if current_date in existing_dates:
-                # Use existing data
-                complete_data.append(data_by_date[current_date])
-            else:
-                # Add zero entry for missing day
-                complete_data.append({
-                    'timestamp': current_date.strftime('%Y-%m-%dT00:00:00Z'),
-                    'count': 0,
-                    'uniques': 0
-                })
-            current_date += timedelta(days=1)
-        
-        return complete_data
+        """Return daily data as-is to preserve all historical data."""
+        return daily_data
     
     def collect_repository_metadata(self, owner: str, repo: str) -> Dict[str, int]:
         """Collect repository metadata (stars, forks, etc.)."""
