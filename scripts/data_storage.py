@@ -56,20 +56,36 @@ class AnalyticsDataStorage:
             # Load existing data for the year
             daily_data = self.file_manager.load_daily_data(owner, repo, year)
             
-            # Add/update the daily entry
-            daily_data[date_key] = {
-                'views': views,
-                'unique_visitors': unique_visitors,
-                'clones': clones,
-                'unique_cloners': unique_cloners,
-                'timestamp': get_current_utc_timestamp()
-            }
+            # Check if data already exists for this date
+            if date_key in daily_data:
+                # Update existing entry (preserve any additional data)
+                existing_entry = daily_data[date_key]
+                existing_entry.update({
+                    'views': views,
+                    'unique_visitors': unique_visitors,
+                    'clones': clones,
+                    'unique_cloners': unique_cloners,
+                    'timestamp': get_current_utc_timestamp()
+                })
+                self.logger.debug(f"Updated existing daily metrics for {owner}/{repo} on {date.date()}")
+            else:
+                # Add new daily entry
+                daily_data[date_key] = {
+                    'views': views,
+                    'unique_visitors': unique_visitors,
+                    'clones': clones,
+                    'unique_cloners': unique_cloners,
+                    'timestamp': get_current_utc_timestamp()
+                }
+                self.logger.debug(f"Added new daily metrics for {owner}/{repo} on {date.date()}")
             
             # Save updated data
             success = self.file_manager.save_daily_data(owner, repo, year, daily_data)
             
             if success:
-                self.logger.info(f"Stored daily metrics for {owner}/{repo} on {date.date()}")
+                self.logger.info(f"Stored daily metrics for {owner}/{repo} on {date.date()}: "
+                               f"{views} views, {unique_visitors} unique visitors, "
+                               f"{clones} clones, {unique_cloners} unique cloners")
             else:
                 self.logger.error(f"Failed to store daily metrics for {owner}/{repo}")
             
@@ -167,9 +183,18 @@ class AnalyticsDataStorage:
             
             for date_key, data in daily_data.items():
                 try:
-                    # Parse date key (MM-DD format)
-                    month, day = date_key.split('-')
-                    date = datetime(year, int(month), int(day), tzinfo=timezone.utc)
+                    # Handle both old format (YYYY-MM-DD) and new format (MM-DD)
+                    if len(date_key) == 10 and date_key.count('-') == 2:
+                        # Old format: YYYY-MM-DD
+                        date_year, month, day = date_key.split('-')
+                        date = datetime(int(date_year), int(month), int(day), tzinfo=timezone.utc)
+                    elif len(date_key) == 5 and date_key.count('-') == 1:
+                        # New format: MM-DD
+                        month, day = date_key.split('-')
+                        date = datetime(year, int(month), int(day), tzinfo=timezone.utc)
+                    else:
+                        # Unknown format, skip
+                        continue
                     
                     # Check if date is in range
                     if start_date <= date <= end_date:
@@ -195,8 +220,18 @@ class AnalyticsDataStorage:
         
         for date_key, data in daily_data.items():
             try:
-                month, day = date_key.split('-')
-                month_key = f"{year}-{month}"
+                # Handle both old format (YYYY-MM-DD) and new format (MM-DD)
+                if len(date_key) == 10 and date_key.count('-') == 2:
+                    # Old format: YYYY-MM-DD
+                    date_year, month, day = date_key.split('-')
+                    month_key = f"{date_year}-{month}"
+                elif len(date_key) == 5 and date_key.count('-') == 1:
+                    # New format: MM-DD
+                    month, day = date_key.split('-')
+                    month_key = f"{year}-{month}"
+                else:
+                    # Unknown format, skip
+                    continue
                 
                 if month_key not in monthly_totals:
                     monthly_totals[month_key] = {
@@ -268,32 +303,43 @@ class AnalyticsDataStorage:
     
     def store_historical_data(self, owner: str, repo: str, 
                             views_daily: List[Dict], clones_daily: List[Dict]) -> bool:
-        """Store historical data from GitHub API (initial 14-day data)."""
+        """Store historical data from GitHub API (preserving existing data)."""
         try:
             success_count = 0
+            years_to_update = {}  # Track which years need updating
             
-            # Process views data - store all historical data
+            # Process views data - preserve all existing data
             for day_data in views_daily:
                 timestamp = day_data.get('timestamp', '')
                 if timestamp:
                     date = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
-                    
-                    # Check if data already exists for this date
                     year = date.year
                     date_key = format_date_for_data_key(date)
-                    daily_data = self.file_manager.load_daily_data(owner, repo, year)
                     
-                    # Only store if data doesn't exist for this date
+                    # Load existing data for this year if not already loaded
+                    if year not in years_to_update:
+                        years_to_update[year] = self.file_manager.load_daily_data(owner, repo, year)
+                    
+                    daily_data = years_to_update[year]
+                    
+                    # Only store if data doesn't exist for this date (preserve existing data)
                     if date_key not in daily_data:
-                        success = self.store_daily_metrics(
-                            owner, repo, date,
-                            views=day_data.get('count', 0),
-                            unique_visitors=day_data.get('uniques', 0),
-                            clones=0,  # Will be updated from clones data
-                            unique_cloners=0
-                        )
-                        if success:
-                            success_count += 1
+                        daily_data[date_key] = {
+                            'views': day_data.get('count', 0),
+                            'unique_visitors': day_data.get('uniques', 0),
+                            'clones': 0,  # Will be updated from clones data
+                            'unique_cloners': 0,
+                            'timestamp': get_current_utc_timestamp()
+                        }
+                        success_count += 1
+                        self.logger.debug(f"Added new views data for {owner}/{repo} on {date.date()}")
+                    else:
+                        # Update views data but preserve clones if they exist
+                        existing_entry = daily_data[date_key]
+                        existing_entry['views'] = day_data.get('count', 0)
+                        existing_entry['unique_visitors'] = day_data.get('uniques', 0)
+                        existing_entry['timestamp'] = get_current_utc_timestamp()
+                        self.logger.debug(f"Updated views data for {owner}/{repo} on {date.date()}")
             
             # Process clones data and update existing entries
             for day_data in clones_daily:
@@ -303,13 +349,18 @@ class AnalyticsDataStorage:
                     year = date.year
                     date_key = format_date_for_data_key(date)
                     
-                    # Load existing data
-                    daily_data = self.file_manager.load_daily_data(owner, repo, year)
+                    # Load existing data for this year if not already loaded
+                    if year not in years_to_update:
+                        years_to_update[year] = self.file_manager.load_daily_data(owner, repo, year)
+                    
+                    daily_data = years_to_update[year]
                     
                     # Update clones data if entry exists, or create new entry
                     if date_key in daily_data:
                         daily_data[date_key]['clones'] = day_data.get('count', 0)
                         daily_data[date_key]['unique_cloners'] = day_data.get('uniques', 0)
+                        daily_data[date_key]['timestamp'] = get_current_utc_timestamp()
+                        self.logger.debug(f"Updated clones data for {owner}/{repo} on {date.date()}")
                     else:
                         daily_data[date_key] = {
                             'views': 0,
@@ -319,11 +370,14 @@ class AnalyticsDataStorage:
                             'timestamp': get_current_utc_timestamp()
                         }
                         success_count += 1
-                    
-                    self.file_manager.save_daily_data(owner, repo, year, daily_data)
+                        self.logger.debug(f"Added new clones data for {owner}/{repo} on {date.date()}")
             
-            self.logger.info(f"Stored {success_count} days of historical data for {owner}/{repo}")
-            return success_count > 0
+            # Save all updated years
+            for year, data in years_to_update.items():
+                self.file_manager.save_daily_data(owner, repo, year, data)
+            
+            self.logger.info(f"Processed historical data for {owner}/{repo}: {success_count} new entries, {len(years_to_update)} years updated")
+            return True
             
         except Exception as e:
             self.logger.error(f"Error storing historical data: {e}")
