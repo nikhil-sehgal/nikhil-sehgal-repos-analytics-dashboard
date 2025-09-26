@@ -198,9 +198,9 @@ def format_date_for_data_key(date: datetime) -> str:
         date: Date to format
     
     Returns:
-        Formatted date string (YYYY-MM-DD)
+        Formatted date string (MM-DD)
     """
-    return date.strftime('%Y-%m-%d')
+    return date.strftime('%m-%d')
 
 
 def format_month_for_data_key(date: datetime) -> str:
@@ -213,6 +213,72 @@ def format_month_for_data_key(date: datetime) -> str:
         Formatted month string (YYYY-MM)
     """
     return date.strftime('%Y-%m')
+
+
+def load_env_file(env_file_path: str = '.env') -> Dict[str, str]:
+    """Load environment variables from .env file.
+    
+    Args:
+        env_file_path: Path to .env file
+    
+    Returns:
+        Dictionary of environment variables
+    """
+    env_vars = {}
+    
+    if os.path.exists(env_file_path):
+        try:
+            with open(env_file_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    
+                    # Skip empty lines and comments
+                    if not line or line.startswith('#'):
+                        continue
+                    
+                    # Parse KEY=VALUE format
+                    if '=' in line:
+                        key, value = line.split('=', 1)
+                        key = key.strip()
+                        value = value.strip()
+                        
+                        # Remove quotes if present
+                        if value.startswith('"') and value.endswith('"'):
+                            value = value[1:-1]
+                        elif value.startswith("'") and value.endswith("'"):
+                            value = value[1:-1]
+                        
+                        env_vars[key] = value
+        
+        except Exception as e:
+            logging.warning(f"Failed to load .env file: {e}")
+    
+    return env_vars
+
+
+def get_github_token(env_file_path: str = '.env') -> Optional[str]:
+    """Get GitHub token from environment or .env file.
+    
+    Args:
+        env_file_path: Path to .env file
+    
+    Returns:
+        GitHub token or None if not found
+    """
+    # First try environment variable
+    token = os.getenv('GITHUB_TOKEN')
+    
+    if not token:
+        # Try loading from .env file
+        env_vars = load_env_file(env_file_path)
+        token = env_vars.get('GITHUB_TOKEN')
+    
+    if not token:
+        # Try loading from .env.example as fallback
+        env_vars = load_env_file('.env.example')
+        token = env_vars.get('GITHUB_TOKEN')
+    
+    return token
 
 
 class DataFileManager:
@@ -304,7 +370,7 @@ class DataFileManager:
             owner: Repository owner
             name: Repository name
             year: Year to save data for
-            data: Daily data to save
+            data: Daily data to save (should be a dict with date keys)
         
         Returns:
             True if successful, False otherwise
@@ -314,10 +380,12 @@ class DataFileManager:
         # Load existing data
         existing_data = safe_json_load(daily_metrics_path)
         
-        # Merge with existing year data instead of replacing
+        # Ensure year exists in data structure
         if str(year) not in existing_data:
             existing_data[str(year)] = {}
         
+        # Merge new data with existing data for this year
+        # This preserves all historical data while adding new entries
         existing_data[str(year)].update(data)
         
         # Save updated data
